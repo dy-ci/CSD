@@ -1,4 +1,4 @@
-﻿using Microsoft.UI;
+using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -516,18 +516,15 @@ namespace CSD.Views
 
             if (_studentNames.Count == 0)
             {
-                var token = AppSettings.Values["Token"] as string;
-                if (!string.IsNullOrWhiteSpace(token))
+                var dataProvider = AppSettings.Values["Settings_DataProvider"] as string;
+                if (dataProvider == "本地存储")
                 {
-                    var baseUrl = (AppSettings.Values["Settings_ServerUrl"] as string ?? "https://kv-service.wuyuan.dev").TrimEnd('/');
-                    try
+                    var localResponse = await LocalKvStorageEngine.HandleRequestAsync(HttpMethod.Get, "/kv/classworks-list-main", null);
+                    if (localResponse.IsSuccessStatusCode)
                     {
-                        using var request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}/kv/{Uri.EscapeDataString("classworks-list-main")}");
-                        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.Trim());
-                        using var response = await _httpClient.SendAsync(request);
-                        if (response.IsSuccessStatusCode)
+                        var body = await localResponse.Content.ReadAsStringAsync();
+                        try
                         {
-                            var body = await response.Content.ReadAsStringAsync();
                             using var doc = JsonDocument.Parse(body);
                             if (doc.RootElement.TryGetProperty("data", out var dataEl) && dataEl.ValueKind == JsonValueKind.String)
                             {
@@ -539,8 +536,37 @@ namespace CSD.Views
                                 }
                             }
                         }
+                        catch { }
                     }
-                    catch { }
+                }
+                else
+                {
+                    var token = AppSettings.Values["Token"] as string;
+                    if (!string.IsNullOrWhiteSpace(token))
+                    {
+                        var baseUrl = (AppSettings.Values["Settings_ServerUrl"] as string ?? "https://kv-service.wuyuan.dev").TrimEnd('/');
+                        try
+                        {
+                            using var request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}/kv/{Uri.EscapeDataString("classworks-list-main")}");
+                            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.Trim());
+                            using var response = await _httpClient.SendAsync(request);
+                            if (response.IsSuccessStatusCode)
+                            {
+                                var body = await response.Content.ReadAsStringAsync();
+                                using var doc = JsonDocument.Parse(body);
+                                if (doc.RootElement.TryGetProperty("data", out var dataEl) && dataEl.ValueKind == JsonValueKind.String)
+                                {
+                                    var data = dataEl.GetString();
+                                    if (!string.IsNullOrEmpty(data))
+                                    {
+                                        var lines = data.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                                        _studentNames = lines.Select(l => l.Trim()).Where(l => !string.IsNullOrEmpty(l)).ToList();
+                                    }
+                                }
+                            }
+                        }
+                        catch { }
+                    }
                 }
             }
 

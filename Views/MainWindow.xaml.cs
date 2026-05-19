@@ -969,8 +969,11 @@ namespace CSD.Views
             var dataProvider = AppSettings.Values["Settings_DataProvider"] as string;
             if (dataProvider == "本地存储")
             {
-                // 如果是本地存储模式，直接返回空或本地数据
-                // 因为目前还没完全实现本地 KV 存储引擎，暂时返回空来触发“未布置作业”的逻辑
+                var localResponse = await LocalKvStorageEngine.HandleRequestAsync(method, path, jsonBody);
+                if (localResponse.IsSuccessStatusCode)
+                {
+                    return await localResponse.Content.ReadAsStringAsync();
+                }
                 return null;
             }
 

@@ -21,8 +21,6 @@ using CSD.Helpers;
 using CSD.Settings;
 
 
-
-
 namespace CSD.Views
 {
     public enum AttendanceStatus
@@ -46,6 +44,8 @@ namespace CSD.Views
         private readonly List<StudentAttendance> _students = new();
         private readonly List<StudentAttendance> _filteredStudents = new();
         private readonly Dictionary<StudentAttendance, Border> _studentCards = new();
+
+        private static readonly FontFamily MdiFont = new(AppSettings.GetAssetUri("Assets/MaterialDesignIconsDesktop.ttf").AbsoluteUri + "#Material Design Icons");
 
         public AttendanceWindow(DateTime attendanceDate)
         {
@@ -174,6 +174,17 @@ namespace CSD.Views
 
         private async Task<string?> SendKvRequestAsync(HttpMethod method, string path, string? jsonBody = null)
         {
+            var dataProvider = AppSettings.Values["Settings_DataProvider"] as string;
+            if (dataProvider == "本地存储")
+            {
+                var localResponse = await LocalKvStorageEngine.HandleRequestAsync(method, path, jsonBody);
+                if (localResponse.IsSuccessStatusCode)
+                {
+                    return await localResponse.Content.ReadAsStringAsync();
+                }
+                return null;
+            }
+
             var token = AppSettings.Values["Token"] as string;
             if (string.IsNullOrWhiteSpace(token))
             {
@@ -216,7 +227,7 @@ namespace CSD.Views
             var headerIcon = new TextBlock
             {
                 Text = char.ConvertFromUtf32(0xF0849),
-                FontFamily = new Microsoft.UI.Xaml.Media.FontFamily(AppSettings.GetAssetUri("Assets/MaterialDesignIconsDesktop.ttf").AbsoluteUri + "#Material Design Icons Desktop"),
+                FontFamily = MdiFont,
                 FontSize = 32,
                 Foreground = new SolidColorBrush(Colors.White),
                 HorizontalAlignment = HorizontalAlignment.Center
@@ -322,8 +333,6 @@ namespace CSD.Views
 
             return card;
         }
-
-        private static readonly FontFamily MdiFont = new(AppSettings.GetAssetUri("Assets/MaterialDesignIconsDesktop.ttf").AbsoluteUri + "#Material Design Icons Desktop");
 
         private Button CreateStatusButton(string icon, AttendanceStatus status, Color color, StudentAttendance student)
         {

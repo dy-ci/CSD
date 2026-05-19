@@ -145,17 +145,24 @@ namespace CSD.Settings
 
         private async Task<bool> TryPushSubjectsToKvCoreAsync(bool showErrors)
         {
+            var payload = new List<Dictionary<string, object>>();
+            for (var i = 0; i < _managedSubjects.Count; i++)
+                payload.Add(new Dictionary<string, object> { ["order"] = i + 1, ["name"] = _managedSubjects[i] });
+            var json = JsonSerializer.Serialize(payload);
+
+            var dataProvider = AppSettings.Values["Settings_DataProvider"] as string;
+            if (dataProvider == "本地存储")
+            {
+                var localResponse = await LocalKvStorageEngine.HandleRequestAsync(HttpMethod.Post, $"/kv/{ClassworksKvKeys.SubjectConfig}", json);
+                return localResponse.IsSuccessStatusCode;
+            }
+
             var token = AppSettings.Values["Token"] as string;
             if (string.IsNullOrWhiteSpace(token)) return false;
 
             var baseUrl = (AppSettings.Values["Settings_ServerUrl"] as string ?? "https://kv-service.wuyuan.dev").TrimEnd('/');
             try
             {
-                var payload = new List<Dictionary<string, object>>();
-                for (var i = 0; i < _managedSubjects.Count; i++)
-                    payload.Add(new Dictionary<string, object> { ["order"] = i + 1, ["name"] = _managedSubjects[i] });
-
-                var json = JsonSerializer.Serialize(payload);
                 using var request = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl}/kv/{ClassworksKvKeys.SubjectConfig}") { Content = new StringContent(json, Encoding.UTF8, "application/json") };
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.Trim());
                 using var response = await Context.HttpClient.SendAsync(request);
@@ -216,28 +223,53 @@ namespace CSD.Settings
 
         private async Task ReloadSubjectsFromKvAsync(bool showErrors)
         {
-            var token = AppSettings.Values["Token"] as string;
-            var baseUrl = (AppSettings.Values["Settings_ServerUrl"] as string ?? "https://kv-service.wuyuan.dev").TrimEnd('/');
-            if (string.IsNullOrWhiteSpace(token))
+            string body;
+            var dataProvider = AppSettings.Values["Settings_DataProvider"] as string;
+            if (dataProvider == "本地存储")
             {
-                if (showErrors) await ShowSimpleDialogAsync("请先配置 KV 授权令牌后再从服务器加载科目列表。");
-                LoadSettings();
-                return;
-            }
-
-            try
-            {
-                using var request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}/kv/{ClassworksKvKeys.SubjectConfig}");
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.Trim());
-                using var response = await Context.HttpClient.SendAsync(request);
-                var body = await response.Content.ReadAsStringAsync();
-                if (!response.IsSuccessStatusCode)
+                var localResponse = await LocalKvStorageEngine.HandleRequestAsync(HttpMethod.Get, $"/kv/{ClassworksKvKeys.SubjectConfig}", null);
+                if (!localResponse.IsSuccessStatusCode)
                 {
-                    if (showErrors) await ShowSimpleDialogAsync($"从服务器加载失败（HTTP {(int)response.StatusCode}）。已显示本机已保存的列表。");
+                    if (showErrors) await ShowSimpleDialogAsync("从本地存储加载失败。已显示本机缓存。");
+                    LoadSettings();
+                    return;
+                }
+                body = await localResponse.Content.ReadAsStringAsync();
+            }
+            else
+            {
+                var token = AppSettings.Values["Token"] as string;
+                var baseUrl = (AppSettings.Values["Settings_ServerUrl"] as string ?? "https://kv-service.wuyuan.dev").TrimEnd('/');
+                if (string.IsNullOrWhiteSpace(token))
+                {
+                    if (showErrors) await ShowSimpleDialogAsync("请先配置 KV 授权令牌后再从服务器加载科目列表。");
                     LoadSettings();
                     return;
                 }
 
+                try
+                {
+                    using var request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}/kv/{ClassworksKvKeys.SubjectConfig}");
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.Trim());
+                    using var response = await Context.HttpClient.SendAsync(request);
+                    body = await response.Content.ReadAsStringAsync();
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        if (showErrors) await ShowSimpleDialogAsync($"从服务器加载失败（HTTP {(int)response.StatusCode}）。已显示本机已保存的列表。");
+                        LoadSettings();
+                        return;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    if (showErrors) await ShowSimpleDialogAsync($"加载失败：{ex.Message}");
+                    LoadSettings();
+                    return;
+                }
+            }
+
+            try
+            {
                 using var doc = JsonDocument.Parse(body);
                 var pairs = new List<(int order, string name)>();
                 foreach (var el in doc.RootElement.EnumerateArray())
