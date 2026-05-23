@@ -133,6 +133,7 @@ namespace CSD.Views
             _modules.Add(new SubjectSettingsModule());
             _modules.Add(new RosterSettingsModule());
             _modules.Add(new RefreshSettingsModule());
+            _modules.Add(new NotificationSettingsModule());
             _modules.Add(new EditSettingsModule());
             _modules.Add(new DisplaySettingsModule());
             _modules.Add(new PlaybackSettingsModule());

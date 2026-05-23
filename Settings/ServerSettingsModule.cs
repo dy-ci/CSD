@@ -291,6 +291,9 @@ namespace CSD.Settings
                 settings.Remove("Token");
             else
                 settings["Token"] = tokenTrimmed;
+            
+            // 重新连接 SocketIO 以应用新的服务器地址或令牌
+            _ = SocketIoService.Instance.ConnectAsync();
         }
 
         public override async void OnNavigatedTo()

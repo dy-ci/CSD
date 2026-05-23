@@ -52,6 +52,7 @@
     <Content Include="icons\ic_public_refresh.ico" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="icons\ic_statusbar_alarm.ico" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Assets\MaterialDesignIconsDesktop.ttf" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\sounds\**\*.mp3" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
@@ -69,6 +70,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.1839" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.0.1" />
+    <PackageReference Include="SocketIOClient" Version="4.0.4" />
     <PackageReference Include="System.Management" Version="10.0.8" />
   </ItemGroup>
 
