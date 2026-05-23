@@ -55,6 +55,7 @@ namespace CSD.Views
         private DebugWindow? _debugWindow;
         private bool _isUpdatingCalendarSelection;
         private bool _isContentDialogOpen;
+        private bool _pendingCloseDialog;
 
         // 当前作业的科目名称集合（用于判断未完成作业）
         private HashSet<string> _currentHomeworkSubjects = new();
@@ -90,16 +91,20 @@ namespace CSD.Views
 
             RestoreWindowState();
 
-            // 关闭时保存窗口状态
             AppWindow.Closing += (sender, args) =>
             {
                 SaveWindowState();
-                _ = SocketIoService.Instance.DisposeAsync();
+                args.Cancel = true;
+
+                if (_pendingCloseDialog) return;
+                _pendingCloseDialog = true;
+                _ = HandleCloseAsync();
             };
 
             Closed += (sender, args) =>
             {
                 SaveWindowState();
+                App.TrayService?.Dispose();
             };
 
             _autoRefreshTimer.Tick += AutoRefreshTimer_Tick;
@@ -111,6 +116,79 @@ namespace CSD.Views
 
             UpdateDateDisplay();
             _ = LoadHomeworkAsync(_currentDate);
+        }
+
+        private async Task HandleCloseAsync()
+        {
+            try
+            {
+                var settings = AppSettings.Values;
+                bool firstCloseShown = (bool)(settings["Settings_FirstCloseDialogShown"] ?? false);
+
+                if (!firstCloseShown)
+                {
+                    var checkbox = new CheckBox
+                    {
+                        Content = "记住我的选择，后续可前往「设置」修改",
+                        IsChecked = true,
+                        Margin = new Thickness(0, 12, 0, 0)
+                    };
+
+                    var stack = new StackPanel();
+                    stack.Children.Add(new TextBlock
+                    {
+                        Text = "关闭 CSD 时您希望：",
+                        TextWrapping = TextWrapping.Wrap,
+                        FontSize = 14
+                    });
+                    stack.Children.Add(checkbox);
+
+                    var dialog = new ContentDialog
+                    {
+                        Title = "关闭 CSD",
+                        Content = stack,
+                        PrimaryButtonText = "关闭软件",
+                        SecondaryButtonText = "隐藏到系统托盘",
+                        CloseButtonText = "取消",
+                        DefaultButton = ContentDialogButton.Primary,
+                        XamlRoot = Content.XamlRoot
+                    };
+
+                    var result = await dialog.ShowAsync();
+
+                    if (result == ContentDialogResult.None)
+                        return;
+
+                    string chosenBehavior = result == ContentDialogResult.Primary ? "Close" : "MinimizeToTray";
+                    settings["Settings_CloseBehavior"] = chosenBehavior;
+
+                    if (checkbox.IsChecked == true)
+                        settings["Settings_FirstCloseDialogShown"] = true;
+
+                    if (chosenBehavior == "MinimizeToTray")
+                    {
+                        App.TrayService?.HideWindow();
+                        return;
+                    }
+                }
+                else
+                {
+                    string closeBehavior = settings["Settings_CloseBehavior"] as string ?? "Close";
+                    if (closeBehavior == "MinimizeToTray")
+                    {
+                        App.TrayService?.HideWindow();
+                        return;
+                    }
+                }
+
+                await SocketIoService.Instance.DisposeAsync();
+                App.TrayService?.Dispose();
+                Application.Current.Exit();
+            }
+            finally
+            {
+                _pendingCloseDialog = false;
+            }
         }
 
         private void ConfigureIntegratedTitleBar()

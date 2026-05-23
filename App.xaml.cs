@@ -40,6 +40,8 @@ namespace CSD
         private const string TokenSettingsKey = "Token";
         private Window? _window;
 
+        public static TrayService? TrayService { get; private set; }
+
         /// <summary>
         /// Initializes the singleton application object.  This is the first line of authored code
         /// executed, and as such is the logical equivalent of main() or WinMain().
@@ -136,6 +138,9 @@ namespace CSD
             var savedToken = AppSettings.Values[TokenSettingsKey] as string;
             _window = string.IsNullOrWhiteSpace(savedToken) ? new InitializationWindow() : new MainWindow();
             _window.Activate();
+
+            TrayService = new TrayService(_window);
+            TrayService.Initialize();
         }
     }
 }

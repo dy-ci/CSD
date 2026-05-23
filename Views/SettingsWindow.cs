@@ -140,6 +140,7 @@ namespace CSD.Views
             _modules.Add(new RandomPickerSettingsModule());
             _modules.Add(new PerformanceSettingsModule());
             _modules.Add(new AutoStartSettingsModule());
+            _modules.Add(new CloseBehaviorSettingsModule());
             _modules.Add(new AccountSettingsModule());
             _modules.Add(new UpdateSettingsModule());
 
