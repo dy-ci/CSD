@@ -94,13 +94,12 @@ namespace CSD.Views
             AppWindow.Closing += (sender, args) =>
             {
                 SaveWindowState();
-                SocketIoService.Instance.Dispose();
+                _ = SocketIoService.Instance.DisposeAsync();
             };
 
             Closed += (sender, args) =>
             {
                 SaveWindowState();
-                SocketIoService.Instance.Dispose();
             };
 
             _autoRefreshTimer.Tick += AutoRefreshTimer_Tick;
@@ -158,196 +157,217 @@ namespace CSD.Views
                 });
             };
 
-            socketService.OnUrgentNotice += (data) =>
+            socketService.OnUrgentNotice += async (data) =>
             {
-                DispatcherQueue.TryEnqueue(async () =>
+                try
                 {
-                    try
+                    using var doc = JsonDocument.Parse(data);
+                    string message = "收到紧急通知";
+                    string? notificationId = null;
+
+                    if (doc.RootElement.ValueKind == JsonValueKind.Object)
                     {
-                        var urgentSound = AppSettings.Values["Settings_UrgentNotificationSound"] as string;
-                        if (!string.IsNullOrEmpty(urgentSound) && urgentSound != "无")
+                        if (doc.RootElement.TryGetProperty("content", out var contentElement) && contentElement.ValueKind == JsonValueKind.Object)
                         {
-                            SoundService.PlaySound(urgentSound, loop: true);
-                        }
-
-                        using var doc = JsonDocument.Parse(data);
-                        string message = "收到紧急通知";
-                        string? notificationId = null;
-
-                        if (doc.RootElement.ValueKind == JsonValueKind.Object)
-                        {
-                            if (doc.RootElement.TryGetProperty("content", out var contentElement) && contentElement.ValueKind == JsonValueKind.Object)
+                            if (contentElement.TryGetProperty("message", out var msgElement) && msgElement.ValueKind == JsonValueKind.String)
                             {
-                                if (contentElement.TryGetProperty("message", out var msgElement) && msgElement.ValueKind == JsonValueKind.String)
-                                {
-                                    message = msgElement.GetString() ?? message;
-                                }
-                                if (contentElement.TryGetProperty("notificationId", out var idElement) && idElement.ValueKind == JsonValueKind.String)
-                                {
-                                    notificationId = idElement.GetString();
-                                }
+                                message = msgElement.GetString() ?? message;
                             }
-                            else 
+                            if (contentElement.TryGetProperty("notificationId", out var idElement) && idElement.ValueKind == JsonValueKind.String)
                             {
-                                if (doc.RootElement.TryGetProperty("message", out var msgElement2) && msgElement2.ValueKind == JsonValueKind.String)
-                                {
-                                    message = msgElement2.GetString() ?? message;
-                                }
-                                if (doc.RootElement.TryGetProperty("notificationId", out var idElement2) && idElement2.ValueKind == JsonValueKind.String)
-                                {
-                                    notificationId = idElement2.GetString();
-                                }
-                                if (doc.RootElement.TryGetProperty("content", out var stringContent) && stringContent.ValueKind == JsonValueKind.String)
-                                {
-                                    message = stringContent.GetString() ?? message;
-                                }
+                                notificationId = idElement.GetString();
                             }
                         }
-                        else if (doc.RootElement.ValueKind == JsonValueKind.String)
+                        else 
                         {
-                            message = doc.RootElement.GetString() ?? message;
-                        }
-
-                        var deviceInfo = new { deviceName = "桌面端", deviceType = "desktop" };
-
-                        // Send Displayed Receipt
-                        if (notificationId != null)
-                        {
-                            await socketService.SendEventAsync("notification-displayed", new
+                            if (doc.RootElement.TryGetProperty("message", out var msgElement2) && msgElement2.ValueKind == JsonValueKind.String)
                             {
-                                eventId = $"disp-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}",
-                                notificationId = notificationId,
-                                deviceInfo = deviceInfo
-                            });
-                        }
-
-                        var notificationWindow = new NotificationWindow("🚨 紧急通知", message, true);
-                        notificationWindow.Closed += async (s, e) =>
-                        {
-                            // Send Read Receipt
-                            if (notificationId != null)
-                            {
-                                await socketService.SendEventAsync("notification-read", new
-                                {
-                                    eventId = $"read-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}",
-                                    notificationId = notificationId,
-                                    deviceInfo = deviceInfo
-                                });
+                                message = msgElement2.GetString() ?? message;
                             }
-                        };
-                        notificationWindow.Activate();
+                            if (doc.RootElement.TryGetProperty("notificationId", out var idElement2) && idElement2.ValueKind == JsonValueKind.String)
+                            {
+                                notificationId = idElement2.GetString();
+                            }
+                            if (doc.RootElement.TryGetProperty("content", out var stringContent) && stringContent.ValueKind == JsonValueKind.String)
+                            {
+                                message = stringContent.GetString() ?? message;
+                            }
+                        }
                     }
-                    catch (Exception ex)
+                    else if (doc.RootElement.ValueKind == JsonValueKind.String)
                     {
-                        System.Diagnostics.Debug.WriteLine("Failed to parse urgent notice: " + ex.Message);
+                        message = doc.RootElement.GetString() ?? message;
                     }
-                });
-            };
 
-            socketService.OnNotification += (data) =>
-            {
-                DispatcherQueue.TryEnqueue(async () =>
-                {
-                    try
+                    var deviceInfo = new { deviceName = "桌面端", deviceType = "desktop" };
+
+                    // Send Displayed Receipt (async, no UI thread needed)
+                    if (notificationId != null)
                     {
-                        using var doc = JsonDocument.Parse(data);
-                        string message = "收到通知";
-                        string? notificationId = null;
-                        bool isUrgent = false;
-
-                        if (doc.RootElement.ValueKind == JsonValueKind.Object)
+                        await socketService.SendEventAsync("notification-displayed", new
                         {
-                            if (doc.RootElement.TryGetProperty("content", out var contentElement) && contentElement.ValueKind == JsonValueKind.Object)
-                            {
-                                if (contentElement.TryGetProperty("message", out var msgElement) && msgElement.ValueKind == JsonValueKind.String)
-                                {
-                                    message = msgElement.GetString() ?? message;
-                                }
-                                if (contentElement.TryGetProperty("notificationId", out var idElement) && idElement.ValueKind == JsonValueKind.String)
-                                {
-                                    notificationId = idElement.GetString();
-                                }
-                                if (contentElement.TryGetProperty("isUrgent", out var urgentElement) && urgentElement.ValueKind == JsonValueKind.True)
-                                {
-                                    isUrgent = true;
-                                }
-                            }
-                            else 
-                            {
-                                if (doc.RootElement.TryGetProperty("message", out var msgElement2) && msgElement2.ValueKind == JsonValueKind.String)
-                                {
-                                    message = msgElement2.GetString() ?? message;
-                                }
-                                if (doc.RootElement.TryGetProperty("notificationId", out var idElement2) && idElement2.ValueKind == JsonValueKind.String)
-                                {
-                                    notificationId = idElement2.GetString();
-                                }
-                                if (doc.RootElement.TryGetProperty("isUrgent", out var urgentElement2) && urgentElement2.ValueKind == JsonValueKind.True)
-                                {
-                                    isUrgent = true;
-                                }
-                                if (doc.RootElement.TryGetProperty("content", out var stringContent) && stringContent.ValueKind == JsonValueKind.String)
-                                {
-                                    message = stringContent.GetString() ?? message;
-                                }
-                            }
-                        }
-                        else if (doc.RootElement.ValueKind == JsonValueKind.String)
-                        {
-                            message = doc.RootElement.GetString() ?? message;
-                        }
+                            eventId = $"disp-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}",
+                            notificationId = notificationId,
+                            deviceInfo = deviceInfo
+                        });
+                    }
 
-                        if (isUrgent)
+                    // Only UI work goes through DispatcherQueue — sync delegate only
+                    var capturedMessage = message;
+                    var capturedNid = notificationId;
+                    var capturedDeviceInfo = deviceInfo;
+                    DispatcherQueue.TryEnqueue(delegate
+                    {
+                        try
                         {
                             var urgentSound = AppSettings.Values["Settings_UrgentNotificationSound"] as string;
                             if (!string.IsNullOrEmpty(urgentSound) && urgentSound != "无")
                             {
                                 SoundService.PlaySound(urgentSound, loop: true);
                             }
-                        }
-                        else
-                        {
-                            var normalSound = AppSettings.Values["Settings_NormalNotificationSound"] as string;
-                            if (!string.IsNullOrEmpty(normalSound) && normalSound != "无")
-                            {
-                                SoundService.PlaySound(normalSound, loop: false);
-                            }
-                        }
 
-                        var deviceInfo = new { deviceName = "桌面端", deviceType = "desktop" };
-
-                        // Send Displayed Receipt
-                        if (notificationId != null)
-                        {
-                            await socketService.SendEventAsync("notification-displayed", new
+                            var notificationWindow = new NotificationWindow("🚨 紧急通知", capturedMessage, true);
+                            notificationWindow.Closed += async (s, e) =>
                             {
-                                eventId = $"disp-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}",
-                                notificationId = notificationId,
-                                deviceInfo = deviceInfo
-                            });
-                        }
-                        
-                        var notificationWindow = new NotificationWindow(isUrgent ? "🚨 紧急通知" : "📢 通知消息", message, isUrgent);
-                        notificationWindow.Closed += async (s, e) =>
-                        {
-                            // Send Read Receipt
-                            if (notificationId != null)
-                            {
-                                await socketService.SendEventAsync("notification-read", new
+                                if (capturedNid != null)
                                 {
-                                    eventId = $"read-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}",
-                                    notificationId = notificationId,
-                                    deviceInfo = deviceInfo
-                                });
-                            }
-                        };
-                        notificationWindow.Activate();
-                    }
-                    catch (Exception ex)
+                                    await socketService.SendEventAsync("notification-read", new
+                                    {
+                                        eventId = $"read-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}",
+                                        notificationId = capturedNid,
+                                        deviceInfo = capturedDeviceInfo
+                                    });
+                                }
+                            };
+                            notificationWindow.Activate();
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine("Failed to show urgent notice UI: " + ex.Message);
+                        }
+                    });
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine("Failed to parse urgent notice: " + ex.Message);
+                }
+            };
+
+            socketService.OnNotification += async (data) =>
+            {
+                try
+                {
+                    using var doc = JsonDocument.Parse(data);
+                    string message = "收到通知";
+                    string? notificationId = null;
+                    bool isUrgent = false;
+
+                    if (doc.RootElement.ValueKind == JsonValueKind.Object)
                     {
-                        System.Diagnostics.Debug.WriteLine("Failed to parse notification: " + ex.Message);
+                        if (doc.RootElement.TryGetProperty("content", out var contentElement) && contentElement.ValueKind == JsonValueKind.Object)
+                        {
+                            if (contentElement.TryGetProperty("message", out var msgElement) && msgElement.ValueKind == JsonValueKind.String)
+                            {
+                                message = msgElement.GetString() ?? message;
+                            }
+                            if (contentElement.TryGetProperty("notificationId", out var idElement) && idElement.ValueKind == JsonValueKind.String)
+                            {
+                                notificationId = idElement.GetString();
+                            }
+                            if (contentElement.TryGetProperty("isUrgent", out var urgentElement) && urgentElement.ValueKind == JsonValueKind.True)
+                            {
+                                isUrgent = true;
+                            }
+                        }
+                        else 
+                        {
+                            if (doc.RootElement.TryGetProperty("message", out var msgElement2) && msgElement2.ValueKind == JsonValueKind.String)
+                            {
+                                message = msgElement2.GetString() ?? message;
+                            }
+                            if (doc.RootElement.TryGetProperty("notificationId", out var idElement2) && idElement2.ValueKind == JsonValueKind.String)
+                            {
+                                notificationId = idElement2.GetString();
+                            }
+                            if (doc.RootElement.TryGetProperty("isUrgent", out var urgentElement2) && urgentElement2.ValueKind == JsonValueKind.True)
+                            {
+                                isUrgent = true;
+                            }
+                            if (doc.RootElement.TryGetProperty("content", out var stringContent) && stringContent.ValueKind == JsonValueKind.String)
+                            {
+                                message = stringContent.GetString() ?? message;
+                            }
+                        }
                     }
-                });
+                    else if (doc.RootElement.ValueKind == JsonValueKind.String)
+                    {
+                        message = doc.RootElement.GetString() ?? message;
+                    }
+
+                    var deviceInfo = new { deviceName = "桌面端", deviceType = "desktop" };
+
+                    // Send Displayed Receipt (async, no UI thread needed)
+                    if (notificationId != null)
+                    {
+                        await socketService.SendEventAsync("notification-displayed", new
+                        {
+                            eventId = $"disp-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}",
+                            notificationId = notificationId,
+                            deviceInfo = deviceInfo
+                        });
+                    }
+
+                    // Only UI work goes through DispatcherQueue — sync delegate only
+                    var capturedMessage = message;
+                    var capturedNid = notificationId;
+                    var capturedIsUrgent = isUrgent;
+                    var capturedDeviceInfo = deviceInfo;
+                    DispatcherQueue.TryEnqueue(delegate
+                    {
+                        try
+                        {
+                            if (capturedIsUrgent)
+                            {
+                                var urgentSound = AppSettings.Values["Settings_UrgentNotificationSound"] as string;
+                                if (!string.IsNullOrEmpty(urgentSound) && urgentSound != "无")
+                                {
+                                    SoundService.PlaySound(urgentSound, loop: true);
+                                }
+                            }
+                            else
+                            {
+                                var normalSound = AppSettings.Values["Settings_NormalNotificationSound"] as string;
+                                if (!string.IsNullOrEmpty(normalSound) && normalSound != "无")
+                                {
+                                    SoundService.PlaySound(normalSound, loop: false);
+                                }
+                            }
+
+                            var notificationWindow = new NotificationWindow(capturedIsUrgent ? "🚨 紧急通知" : "📢 通知消息", capturedMessage, capturedIsUrgent);
+                            notificationWindow.Closed += async (s, e) =>
+                            {
+                                if (capturedNid != null)
+                                {
+                                    await socketService.SendEventAsync("notification-read", new
+                                    {
+                                        eventId = $"read-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}",
+                                        notificationId = capturedNid,
+                                        deviceInfo = capturedDeviceInfo
+                                    });
+                                }
+                            };
+                            notificationWindow.Activate();
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine("Failed to show notification UI: " + ex.Message);
+                        }
+                    });
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine("Failed to parse notification: " + ex.Message);
+                }
             };
 
             await socketService.ConnectAsync();

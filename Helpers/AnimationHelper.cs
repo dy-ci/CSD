@@ -244,19 +244,27 @@ namespace CSD.Helpers
             if (!highFramerate) durationMs = 0;
             if (durationMs < 1) durationMs = 1;
 
-            var animation = new ColorAnimation
+            try
             {
-                To = toColor,
-                Duration = TimeSpan.FromMilliseconds(durationMs),
-                EnableDependentAnimation = true,
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-            };
+                var animation = new ColorAnimation
+                {
+                    To = toColor,
+                    Duration = TimeSpan.FromMilliseconds(durationMs),
+                    EnableDependentAnimation = true,
+                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+                };
 
-            var storyboard = new Storyboard();
-            storyboard.Children.Add(animation);
-            Storyboard.SetTarget(animation, brush);
-            Storyboard.SetTargetProperty(animation, "Color");
-            storyboard.Begin();
+                var storyboard = new Storyboard();
+                storyboard.Children.Add(animation);
+                Storyboard.SetTarget(animation, brush);
+                Storyboard.SetTargetProperty(animation, "Color");
+                storyboard.Begin();
+            }
+            catch
+            {
+                // Visual tree not ready (e.g. window not yet activated) — fall back to instant set
+                brush.Color = toColor;
+            }
         }
 
         public static void ApplyStandardInteractions(DependencyObject root)

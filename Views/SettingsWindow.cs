@@ -436,8 +436,22 @@ namespace CSD.Views
                 if (button.Tag is string categoryKey && _navigationItemStates.TryGetValue(categoryKey, out var state))
                 {
                     AnimationHelper.AnimateToOpacity(state.HoverBackground, 0f, 140);
-                    AnimationHelper.AnimateBrushColor(state.IconBrush, isActive ? accentColor : secondaryTextColor, 220);
-                    AnimationHelper.AnimateBrushColor(state.LabelBrush, isActive ? primaryTextColor : secondaryTextColor, 220);
+
+                    var iconColor = isActive ? accentColor : secondaryTextColor;
+                    var labelColor = isActive ? primaryTextColor : secondaryTextColor;
+
+                    // When the visual tree is not ready (e.g. during construction before Activate()),
+                    // set colors directly to avoid Storyboard crashes in AnimateBrushColor.
+                    if (button.XamlRoot is not null)
+                    {
+                        AnimationHelper.AnimateBrushColor(state.IconBrush, iconColor, 220);
+                        AnimationHelper.AnimateBrushColor(state.LabelBrush, labelColor, 220);
+                    }
+                    else
+                    {
+                        state.IconBrush.Color = iconColor;
+                        state.LabelBrush.Color = labelColor;
+                    }
                 }
             }
 
@@ -453,9 +467,16 @@ namespace CSD.Views
                 }
                 else
                 {
-                    var visual = Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(_selectionHighlight);
-                    visual.Offset = new System.Numerics.Vector3(0, (float)point.Y, 0);
-                    visual.Scale = new System.Numerics.Vector3(1f, 1f, 1f);
+                    try
+                    {
+                        var visual = Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(_selectionHighlight);
+                        visual.Offset = new System.Numerics.Vector3(0, (float)point.Y, 0);
+                        visual.Scale = new System.Numerics.Vector3(1f, 1f, 1f);
+                    }
+                    catch
+                    {
+                        // Element not yet in visual tree — will be positioned on Loaded
+                    }
                 }
             }
         }

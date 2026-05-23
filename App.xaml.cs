@@ -8,9 +8,13 @@ using Microsoft.UI.Xaml.Navigation;
 using Microsoft.UI.Xaml.Shapes;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Text;
+using System.Threading.Tasks;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
@@ -43,6 +47,84 @@ namespace CSD
         public App()
         {
             InitializeComponent();
+
+            // Unhandled exceptions from WinUI XAML
+            UnhandledException += (sender, e) =>
+            {
+                WriteCrashLog(e.Exception, "WinUI.UnhandledException", message: e.Message);
+                e.Handled = true;
+            };
+
+            // Unhandled exceptions from other threads (catch-all before process kill)
+            AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
+            {
+                var ex = e.ExceptionObject as Exception;
+                WriteCrashLog(ex, "AppDomain.UnhandledException", isTerminating: e.IsTerminating);
+            };
+
+            // Unobserved task exceptions (fire-and-forget tasks)
+            TaskScheduler.UnobservedTaskException += (sender, e) =>
+            {
+                WriteCrashLog(e.Exception, "UnobservedTaskException", observed: e.Observed);
+                e.SetObserved();
+            };
+        }
+
+        private static void WriteCrashLog(Exception? ex, string source,
+            bool? isTerminating = null, bool? observed = null, string? message = null)
+        {
+            try
+            {
+                var dir = System.IO.Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "CSD", "CrashLogs");
+                Directory.CreateDirectory(dir);
+                var logPath = System.IO.Path.Combine(dir, "crash.log");
+
+                var sb = new StringBuilder();
+                sb.AppendLine($"=== CRASH LOG [{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] ===");
+                sb.AppendLine($"Source: {source}");
+                sb.AppendLine($"Version: {Assembly.GetExecutingAssembly().GetName().Version}");
+                sb.AppendLine($"ProcessId: {Environment.ProcessId}");
+
+                if (isTerminating.HasValue)
+                    sb.AppendLine($"IsTerminating: {isTerminating.Value}");
+                if (observed.HasValue)
+                    sb.AppendLine($"Observed: {observed.Value}");
+                if (message != null)
+                    sb.AppendLine($"WinUI.Message: {message}");
+
+                if (ex != null)
+                {
+                    sb.AppendLine($"Exception: {ex.GetType().FullName}");
+                    sb.AppendLine($"Message: {ex.Message}");
+                    sb.AppendLine($"Stack: {ex.StackTrace}");
+                    if (ex.InnerException != null)
+                    {
+                        sb.AppendLine($"Inner: {ex.InnerException.GetType().FullName}");
+                        sb.AppendLine($"Inner Msg: {ex.InnerException.Message}");
+                        sb.AppendLine($"Inner Stack: {ex.InnerException.StackTrace}");
+                    }
+                }
+
+                // Log loaded modules (useful for detecting third-party injections like dockmod64.dll)
+                try
+                {
+                    var modules = Process.GetCurrentProcess().Modules
+                        .Cast<ProcessModule>()
+                        .Select(m => $"{m.ModuleName} @ 0x{m.BaseAddress.ToInt64():X8}");
+                    sb.AppendLine("Modules:");
+                    foreach (var m in modules) sb.AppendLine($"  {m}");
+                }
+                catch { /* suppress */ }
+
+                sb.AppendLine("========================================");
+                File.AppendAllText(logPath, sb.ToString());
+            }
+            catch
+            {
+                // Do not rethrow — we are in an error handler
+            }
         }
 
         /// <summary>

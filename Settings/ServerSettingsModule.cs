@@ -301,7 +301,14 @@ namespace CSD.Settings
             if (!_hasAutoRefreshedDeviceInfo && string.Equals(_dataProviderCombo.SelectedItem as string, DataProviderOptions[0], StringComparison.Ordinal))
             {
                 _hasAutoRefreshedDeviceInfo = true;
-                await RefreshDeviceInfoAsync(showErrors: false);
+                try
+                {
+                    await RefreshDeviceInfoAsync(showErrors: false);
+                }
+                catch
+                {
+                    // Silently ignore — device info is non-critical
+                }
             }
         }
 

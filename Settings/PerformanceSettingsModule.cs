@@ -159,68 +159,93 @@ namespace CSD.Settings
 
         private async Task LoadPerformanceDataAsync()
         {
-            var info = await Task.Run(() => PerformanceService.GetPerformanceInfo());
-            
-            _scoreText.Text = info.Score.ToString();
-            _ratingText.Text = info.Rating;
-            _ratingDescText.Text = info.RatingDescription;
-
-            if (info.Score <= 40)
-                _scoreText.Foreground = new SolidColorBrush(Microsoft.UI.Colors.OrangeRed);
-            else if (info.Score <= 60)
-                _scoreText.Foreground = new SolidColorBrush(Microsoft.UI.Colors.Orange);
-            else if (info.Score <= 80)
-                _scoreText.Foreground = new SolidColorBrush(Microsoft.UI.Colors.LightGreen);
-            else
-                _scoreText.Foreground = new SolidColorBrush(Microsoft.UI.Colors.LimeGreen);
-
-            _mbText.Text = $"{info.Motherboard}\nBIOS: {info.BiosVersion}";
-
-            if (info.Cpus.Count == 0)
+            var dq = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
+            PerformanceInfo info;
+            try
             {
-                _cpuText.Text = "未检测到处理器";
+                info = await Task.Run(() => PerformanceService.GetPerformanceInfo());
             }
-            else
+            catch
             {
-                var cpuTexts = info.Cpus.Select((c, i) => $"[{i + 1}] {c.Model}\n    {c.Cores} 核心 / {c.LogicalProcessors} 线程 | {c.Frequency} | L2: {c.L2CacheKb/1024.0:F1} MB | L3: {c.L3CacheKb/1024.0:F1} MB");
-                _cpuText.Text = string.Join("\n", cpuTexts);
+                dq?.TryEnqueue(() =>
+                {
+                    _loadingRing.IsActive = false;
+                    _loadingRing.Visibility = Visibility.Collapsed;
+                    _contentPanel.Visibility = Visibility.Visible;
+                });
+                return;
             }
 
-            _ramText.Text = $"总计: {info.RamTotalGb:F1} GB | 可用: {info.RamAvailableGb:F1} GB\n类型: {info.RamType} {info.RamSpeed} MHz | 插槽使用: {info.RamSlotsUsed}";
-
-            if (info.Gpus.Count == 0)
+            dq?.TryEnqueue(() =>
             {
-                _gpuText.Text = "未检测到显卡";
-            }
-            else
-            {
-                var gpuTexts = info.Gpus.Select((g, i) => $"[{i + 1}] {g.Name}\n    显存: {g.VramGb:F1} GB | 驱动: {g.DriverVersion}");
-                _gpuText.Text = string.Join("\n", gpuTexts);
-            }
+                try
+                {
+                    _scoreText.Text = info.Score.ToString();
+                    _ratingText.Text = info.Rating;
+                    _ratingDescText.Text = info.RatingDescription;
 
-            var phys = info.Drives.Select((d, i) => $"[物理磁盘] {d.Name} ({d.MediaType}) - {d.TotalGb:F0} GB");
-            var log = info.LogicalDrives.Select(d => $"[逻辑分区] {d.Letter} {d.AvailableGb:F0} GB 可用 / {d.TotalGb:F0} GB 总计");
-            _storageText.Text = string.Join("\n", phys) + "\n" + string.Join("\n", log);
-            
-            if (info.Displays.Count == 0)
-            {
-                _screenText.Text = "未检测到显示器";
-            }
-            else
-            {
-                var displayTexts = info.Displays.Select((d, i) => $"[显示器 {i + 1}] {d.Resolution} @ {d.RefreshRate} Hz");
-                _screenText.Text = string.Join("\n", displayTexts);
-            }
+                    if (info.Score <= 40)
+                        _scoreText.Foreground = new SolidColorBrush(Microsoft.UI.Colors.OrangeRed);
+                    else if (info.Score <= 60)
+                        _scoreText.Foreground = new SolidColorBrush(Microsoft.UI.Colors.Orange);
+                    else if (info.Score <= 80)
+                        _scoreText.Foreground = new SolidColorBrush(Microsoft.UI.Colors.LightGreen);
+                    else
+                        _scoreText.Foreground = new SolidColorBrush(Microsoft.UI.Colors.LimeGreen);
 
-            _osText.Text = $"{info.OsVersion} | 架构: {info.OsArchitecture}";
-            _browserText.Text = info.BrowserInfo;
-            _servicesText.Text = $"{info.RunningServicesCount} 个";
-            _processesText.Text = $"{(info.BackgroundProcessRatio * 100):F1}% (总进程数 {info.TotalProcessesCount})";
-            _appUsageText.Text = $"内存占用: {info.AppMemoryMb:F1} MB";
+                    _mbText.Text = $"{info.Motherboard}\nBIOS: {info.BiosVersion}";
 
-            _loadingRing.IsActive = false;
-            _loadingRing.Visibility = Visibility.Collapsed;
-            _contentPanel.Visibility = Visibility.Visible;
+                    if (info.Cpus.Count == 0)
+                    {
+                        _cpuText.Text = "未检测到处理器";
+                    }
+                    else
+                    {
+                        var cpuTexts = info.Cpus.Select((c, i) => $"[{i + 1}] {c.Model}\n    {c.Cores} 核心 / {c.LogicalProcessors} 线程 | {c.Frequency} | L2: {c.L2CacheKb/1024.0:F1} MB | L3: {c.L3CacheKb/1024.0:F1} MB");
+                        _cpuText.Text = string.Join("\n", cpuTexts);
+                    }
+
+                    _ramText.Text = $"总计: {info.RamTotalGb:F1} GB | 可用: {info.RamAvailableGb:F1} GB\n类型: {info.RamType} {info.RamSpeed} MHz | 插槽使用: {info.RamSlotsUsed}";
+
+                    if (info.Gpus.Count == 0)
+                    {
+                        _gpuText.Text = "未检测到显卡";
+                    }
+                    else
+                    {
+                        var gpuTexts = info.Gpus.Select((g, i) => $"[{i + 1}] {g.Name}\n    显存: {g.VramGb:F1} GB | 驱动: {g.DriverVersion}");
+                        _gpuText.Text = string.Join("\n", gpuTexts);
+                    }
+
+                    var phys = info.Drives.Select((d, i) => $"[物理磁盘] {d.Name} ({d.MediaType}) - {d.TotalGb:F0} GB");
+                    var log = info.LogicalDrives.Select(d => $"[逻辑分区] {d.Letter} {d.AvailableGb:F0} GB 可用 / {d.TotalGb:F0} GB 总计");
+                    _storageText.Text = string.Join("\n", phys) + "\n" + string.Join("\n", log);
+                    
+                    if (info.Displays.Count == 0)
+                    {
+                        _screenText.Text = "未检测到显示器";
+                    }
+                    else
+                    {
+                        var displayTexts = info.Displays.Select((d, i) => $"[显示器 {i + 1}] {d.Resolution} @ {d.RefreshRate} Hz");
+                        _screenText.Text = string.Join("\n", displayTexts);
+                    }
+
+                    _osText.Text = $"{info.OsVersion} | 架构: {info.OsArchitecture}";
+                    _browserText.Text = info.BrowserInfo;
+                    _servicesText.Text = $"{info.RunningServicesCount} 个";
+                    _processesText.Text = $"{(info.BackgroundProcessRatio * 100):F1}% (总进程数 {info.TotalProcessesCount})";
+                    _appUsageText.Text = $"内存占用: {info.AppMemoryMb:F1} MB";
+
+                    _loadingRing.IsActive = false;
+                    _loadingRing.Visibility = Visibility.Collapsed;
+                    _contentPanel.Visibility = Visibility.Visible;
+                }
+                catch
+                {
+                    // Window may have been closed — ignore stale UI updates
+                }
+            });
         }
 
         protected override void LoadSettings()
