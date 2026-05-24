@@ -59,6 +59,7 @@ namespace CSD.Settings
         protected override FrameworkElement BuildContent()
         {
             _serverUrlBox = new TextBox { PlaceholderText = "https://kv-service.wuyuan.dev", HorizontalAlignment = HorizontalAlignment.Stretch };
+            TouchKeyboardHelper.EnableForControl(_serverUrlBox);
             _kvTokenBox = new TextBox
             {
                 AcceptsReturn = false,
@@ -68,6 +69,7 @@ namespace CSD.Settings
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 PlaceholderText = "粘贴 KV 授权令牌"
             };
+            TouchKeyboardHelper.EnableForControl(_kvTokenBox);
 
             _deviceOwnerTitleText = new TextBlock { Text = "未知管理员", FontSize = 20, FontWeight = Microsoft.UI.Text.FontWeights.Bold, TextWrapping = TextWrapping.Wrap, Foreground = (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"] };
             _deviceOwnerSubText = SettingsUIHelper.CreateSecondaryWrappedText("管理员账号 ID: —\n此设备由贵校或贵单位管理，该管理员系此空间所有者，如有疑问请咨询他，对于恶意绑定、滥用行为请反馈。", 13);
@@ -228,6 +230,7 @@ namespace CSD.Settings
             var stack = new StackPanel { Spacing = 20, Visibility = Visibility.Collapsed };
 
             var customTokenBox = new TextBox { AcceptsReturn = false, TextWrapping = TextWrapping.NoWrap, FontFamily = new FontFamily("Consolas"), MinHeight = 40, HorizontalAlignment = HorizontalAlignment.Stretch, PlaceholderText = "粘贴 KV 授权令牌" };
+            TouchKeyboardHelper.EnableForControl(customTokenBox);
             customTokenBox.TextChanged += (s, e) => { _kvTokenBox.Text = customTokenBox.Text; };
             _kvTokenBox.TextChanged += (s, e) => { customTokenBox.Text = _kvTokenBox.Text; };
 

@@ -39,6 +39,8 @@ namespace CSD.Settings
             _editRefreshBeforeEditToggle = new ToggleSwitch { OnContent = null, OffContent = null, MinWidth = 0, Margin = new Thickness(0) };
             _editAutoSavePromptTextBox = new TextBox { AcceptsReturn = false, TextWrapping = TextWrapping.Wrap, MinHeight = 40, HorizontalAlignment = HorizontalAlignment.Stretch };
             _editManualSavePromptTextBox = new TextBox { AcceptsReturn = false, TextWrapping = TextWrapping.Wrap, MinHeight = 40, HorizontalAlignment = HorizontalAlignment.Stretch };
+            TouchKeyboardHelper.EnableForControl(_editAutoSavePromptTextBox);
+            TouchKeyboardHelper.EnableForControl(_editManualSavePromptTextBox);
 
             return SettingsUIHelper.CreateCategoryView(
                 SettingsUIHelper.CreateSettingsGroup("常规",

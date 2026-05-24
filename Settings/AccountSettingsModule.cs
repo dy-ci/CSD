@@ -46,6 +46,7 @@ namespace CSD.Settings
                 PlaceholderText = "输入 KV 授权令牌",
                 Width = 240
             };
+            TouchKeyboardHelper.EnableForControl(_tokenInputBox);
 
             var applyTokenButton = new Button { Content = "应用", Width = 80 };
             applyTokenButton.Click += ApplyTokenButton_Click;

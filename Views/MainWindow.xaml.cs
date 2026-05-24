@@ -633,6 +633,8 @@ namespace CSD.Views
                 // 文本变化时更新预览
                 box.TextChanged += (_, _) => RefreshPreview();
                 
+                TouchKeyboardHelper.EnableForControl(box);
+
                 // 粘贴多行文本：自动拆分为多行
                 box.Paste += (s, e) =>
                 {

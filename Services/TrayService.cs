@@ -1,5 +1,4 @@
 using H.NotifyIcon;
-using H.NotifyIcon.Core;
 using H.NotifyIcon.Interop;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -9,7 +8,6 @@ using System.Runtime.InteropServices;
 using System.Windows.Input;
 using WinRT.Interop;
 
-using CSD.Views;
 using CSD.Models;
 
 namespace CSD.Services
@@ -54,7 +52,7 @@ namespace CSD.Services
             var showItem = new MenuFlyoutItem
             {
                 Icon = new SymbolIcon(Symbol.Home),
-                Text = "显示主窗口",
+                Text = "显示窗口",
                 Command = new RelayCommand(ShowWindow)
             };
             flyout.Items.Add(showItem);
@@ -62,44 +60,10 @@ namespace CSD.Services
             var hideItem = new MenuFlyoutItem
             {
                 Icon = new FontIcon { Glyph = "\uE8A7" },
-                Text = "隐藏主窗口",
+                Text = "隐藏窗口",
                 Command = new RelayCommand(HideWindow)
             };
             flyout.Items.Add(hideItem);
-
-            flyout.Items.Add(new MenuFlyoutSeparator());
-
-            var randomPickerItem = new MenuFlyoutItem
-            {
-                Icon = new FontIcon { Glyph = "\uE716" },
-                Text = "随机抽取学生",
-                Command = new RelayCommand(OpenRandomPicker)
-            };
-            flyout.Items.Add(randomPickerItem);
-
-            var attendanceItem = new MenuFlyoutItem
-            {
-                Icon = new FontIcon { Glyph = "\uE8D6" },
-                Text = "考勤点名",
-                Command = new RelayCommand(OpenAttendance)
-            };
-            flyout.Items.Add(attendanceItem);
-
-            var settingsItem = new MenuFlyoutItem
-            {
-                Icon = new FontIcon { Glyph = "\uE713" },
-                Text = "设置",
-                Command = new RelayCommand(OpenSettings)
-            };
-            flyout.Items.Add(settingsItem);
-
-            var aboutItem = new MenuFlyoutItem
-            {
-                Icon = new FontIcon { Glyph = "\uE946" },
-                Text = "关于",
-                Command = new RelayCommand(OpenAbout)
-            };
-            flyout.Items.Add(aboutItem);
 
             flyout.Items.Add(new MenuFlyoutSeparator());
 
@@ -112,12 +76,6 @@ namespace CSD.Services
             flyout.Items.Add(quitItem);
 
             return flyout;
-        }
-
-        public void ShowNotification(string title, string text, NotificationIcon icon = NotificationIcon.Info)
-        {
-            if (_disposed || _taskbarIcon == null) return;
-            _taskbarIcon.ShowNotification(title, text, icon);
         }
 
         public void ShowWindow()
@@ -133,34 +91,6 @@ namespace CSD.Services
             if (_disposed) return;
             SaveWindowState();
             ShowWindow(_hwnd, SW_HIDE);
-        }
-
-        private void OpenRandomPicker()
-        {
-            if (_disposed) return;
-            var pickerWindow = new RandomPickerWindow();
-            pickerWindow.Activate();
-        }
-
-        private void OpenAttendance()
-        {
-            if (_disposed) return;
-            var attendanceWindow = new AttendanceWindow(DateTime.Today);
-            attendanceWindow.Activate();
-        }
-
-        private void OpenSettings()
-        {
-            if (_disposed) return;
-            var settingsWindow = new SettingsWindow(() => { });
-            settingsWindow.Activate();
-        }
-
-        private void OpenAbout()
-        {
-            if (_disposed) return;
-            var aboutWindow = new AboutWindow();
-            aboutWindow.Activate();
         }
 
         private async void Quit()

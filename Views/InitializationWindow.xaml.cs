@@ -62,6 +62,9 @@ namespace CSD.Views
         public InitializationWindow()
         {
             InitializeComponent();
+            TouchKeyboardHelper.EnableForControl(TokenBox);
+            TouchKeyboardHelper.EnableForControl(NamespaceBox);
+            TouchKeyboardHelper.EnableForControl(AuthPasswordBox);
             BuildAnimationVisuals();
             ConfigureIntegratedTitleBar();
             VisualHelper.ApplyWindowBackdrop(this);

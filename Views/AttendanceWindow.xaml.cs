@@ -51,6 +51,7 @@ namespace CSD.Views
         {
             InitializeComponent();
             _attendanceDate = attendanceDate;
+            TouchKeyboardHelper.EnableForControl(SearchBox);
             VisualHelper.ApplyWindowBackdrop(this);
 
             ExtendsContentIntoTitleBar = true;

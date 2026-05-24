@@ -57,6 +57,7 @@ namespace CSD.Settings
                 SettingsUIHelper.CreateSettingRow("云端同步", "从服务器拉取或推送科目配置。", new FontIcon { Glyph = "\uE753" }, btnRow)));
 
             _subjectNameInput = new TextBox { PlaceholderText = "输入科目名称后按回车添加...", HorizontalAlignment = HorizontalAlignment.Stretch };
+            TouchKeyboardHelper.EnableForControl(_subjectNameInput);
             _subjectNameInput.KeyDown += SubjectNameInput_KeyDown;
 
             _subjectRowsPanel = new StackPanel();

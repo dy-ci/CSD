@@ -17,6 +17,7 @@ namespace CSD.Views
         public NotificationSendWindow()
         {
             InitializeComponent();
+            TouchKeyboardHelper.EnableForControl(ContentBox);
             VisualHelper.ApplyWindowBackdrop(this);
 
             ExtendsContentIntoTitleBar = true;

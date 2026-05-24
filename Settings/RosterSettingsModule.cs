@@ -59,6 +59,7 @@ namespace CSD.Settings
                 SettingsUIHelper.CreateSettingRow("名单管理", "管理学生名单并与云端同步。", new FontIcon { Glyph = "\uE716" }, toolbar)));
 
             _rosterNameInput = new TextBox { PlaceholderText = "输入学生姓名后按回车添加...", HorizontalAlignment = HorizontalAlignment.Stretch };
+            TouchKeyboardHelper.EnableForControl(_rosterNameInput);
             _rosterNameInput.KeyDown += RosterNameInput_KeyDown;
 
             _rosterCardsGrid = new Grid { HorizontalAlignment = HorizontalAlignment.Stretch };
@@ -127,6 +128,7 @@ namespace CSD.Settings
         private async Task AdvancedEditRosterAsync()
         {
             var box = new TextBox { AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MinHeight = 220, MinWidth = 360, FontFamily = new FontFamily("Consolas"), Text = string.Join(Environment.NewLine, _rosterStudents) };
+            TouchKeyboardHelper.EnableForControl(box);
             var dialog = new ContentDialog { Title = "高级编辑", Content = box, PrimaryButtonText = "应用", CloseButtonText = "取消", DefaultButton = ContentDialogButton.Primary, XamlRoot = Context.Window.Content.XamlRoot };
             if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
             var lines = (box.Text ?? "").Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
@@ -361,6 +363,7 @@ namespace CSD.Settings
         {
             if (index < 0 || index >= _rosterStudents.Count) return;
             var box = new TextBox { Text = _rosterStudents[index], Width = 280 };
+            TouchKeyboardHelper.EnableForControl(box);
             var dialog = new ContentDialog { Title = "编辑姓名", Content = box, PrimaryButtonText = "确定", CloseButtonText = "取消", DefaultButton = ContentDialogButton.Primary, XamlRoot = Context.Window.Content.XamlRoot };
             if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
             var t = box.Text?.Trim() ?? "";

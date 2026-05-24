@@ -201,7 +201,7 @@ namespace CSD.Settings
 
         public static NumberBox CreateNumberBoxWithoutHeader(double minimum, double maximum, double step, double defaultValue)
         {
-            return new NumberBox
+            var box = new NumberBox
             {
                 Minimum = minimum,
                 Maximum = maximum,
@@ -212,6 +212,8 @@ namespace CSD.Settings
                 MinWidth = 100,
                 HorizontalAlignment = HorizontalAlignment.Right
             };
+            TouchKeyboardHelper.EnableForControl(box);
+            return box;
         }
 
         public static Border CreateSectionCard(string title, string description, params UIElement[] children)
