@@ -56,10 +56,10 @@ namespace CSD.Settings
         protected override void LoadSettings()
         {
             var s = AppSettings.Values;
-            _editAutoSaveToggle.IsOn = s.ContainsKey(EditPreferencesKeys.AutoSave) && (bool)(s[EditPreferencesKeys.AutoSave] ?? false);
-            _editBlockNonTodayAutoSaveToggle.IsOn = s.ContainsKey(EditPreferencesKeys.BlockNonTodayAutoSave) && (bool)(s[EditPreferencesKeys.BlockNonTodayAutoSave] ?? false);
-            _editConfirmNonTodaySaveToggle.IsOn = s.ContainsKey(EditPreferencesKeys.ConfirmNonTodaySave) && (bool)(s[EditPreferencesKeys.ConfirmNonTodaySave] ?? false);
-            _editRefreshBeforeEditToggle.IsOn = s.ContainsKey(EditPreferencesKeys.RefreshBeforeEdit) && (bool)(s[EditPreferencesKeys.RefreshBeforeEdit] ?? false);
+            _editAutoSaveToggle.IsOn = s.GetBool(EditPreferencesKeys.AutoSave, false);
+            _editBlockNonTodayAutoSaveToggle.IsOn = s.GetBool(EditPreferencesKeys.BlockNonTodayAutoSave, false);
+            _editConfirmNonTodaySaveToggle.IsOn = s.GetBool(EditPreferencesKeys.ConfirmNonTodaySave, false);
+            _editRefreshBeforeEditToggle.IsOn = s.GetBool(EditPreferencesKeys.RefreshBeforeEdit, false);
             _editAutoSavePromptTextBox.Text = s[EditPreferencesKeys.AutoSavePromptText] as string ?? "喵？喵呜！";
             _editManualSavePromptTextBox.Text = s[EditPreferencesKeys.ManualSavePromptText] as string ?? "写完后点击上传谢谢喵";
         }

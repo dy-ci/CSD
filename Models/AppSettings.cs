@@ -27,7 +27,7 @@ namespace CSD.Models
         public static Uri GetAssetUri(string relativePath)
         {
             // Implementation for "High-Res Resource Loading" setting
-            var isHighResEnabled = (bool)(Values["Settings_HighResResourceLoading"] ?? true);
+            var isHighResEnabled = Values.GetBool("Settings_HighResResourceLoading", true);
             if (!isHighResEnabled)
             {
                 // In a real scenario, we might look for a .lowres version or smaller file

@@ -29,8 +29,6 @@ namespace CSD.Views
 {
     public sealed partial class RandomPickerWindow : Window
     {
-        private readonly HttpClient _httpClient = new();
-
         private readonly StackPanel _rootPanel;
         private readonly Border _windowRoot;
         private readonly TextBlock _countDisplay;
@@ -549,7 +547,7 @@ namespace CSD.Views
                         {
                             using var request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}/kv/{Uri.EscapeDataString("classworks-list-main")}");
                             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.Trim());
-                            using var response = await _httpClient.SendAsync(request);
+                            using var response = await AppHttpClient.Instance.SendAsync(request);
                             if (response.IsSuccessStatusCode)
                             {
                                 var body = await response.Content.ReadAsStringAsync();

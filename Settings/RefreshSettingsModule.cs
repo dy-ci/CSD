@@ -52,7 +52,7 @@ namespace CSD.Settings
         protected override void LoadSettings()
         {
             var settings = AppSettings.Values;
-            _autoRefreshToggle.IsOn = settings.ContainsKey("Settings_AutoRefreshEnabled") && (bool)(settings["Settings_AutoRefreshEnabled"] ?? false);
+            _autoRefreshToggle.IsOn = settings.GetBool("Settings_AutoRefreshEnabled", false);
             _autoRefreshIntervalBox.Value = (double)(settings["Settings_AutoRefreshInterval"] ?? 60.0);
         }
 

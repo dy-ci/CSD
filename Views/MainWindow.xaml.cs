@@ -46,7 +46,6 @@ namespace CSD.Views
         private const string CarouselFontSizeKey = "Settings_CarouselFontSize";
         private const string DebugModeKey = "Settings_DebugMode";
 
-        private readonly HttpClient _httpClient = new();
         private int _loadingSequence = 0;
         private DateTime _currentDate = DateTime.Now;
         private string? _rawJson;
@@ -123,7 +122,7 @@ namespace CSD.Views
             try
             {
                 var settings = AppSettings.Values;
-                bool firstCloseShown = (bool)(settings["Settings_FirstCloseDialogShown"] ?? false);
+                bool firstCloseShown = settings.GetBool("Settings_FirstCloseDialogShown", false);
 
                 if (!firstCloseShown)
                 {
@@ -298,7 +297,7 @@ namespace CSD.Views
                     {
                         try
                         {
-                            SoundService.PlayAbsolutePathSound(@"F:\CSD\music\未命名混音项目 2_缩混 (1).wav", loop: true);
+                            SoundService.PlaySound("urgent_notification.wav", loop: true);
 
                             var notificationWindow = new NotificationWindow("🚨 紧急通知", capturedMessage, true);
                             notificationWindow.Closed += async (s, e) =>
@@ -402,7 +401,7 @@ namespace CSD.Views
                         {
                             if (capturedIsUrgent)
                             {
-                                SoundService.PlayAbsolutePathSound(@"F:\CSD\music\未命名混音项目 2_缩混 (1).wav", loop: true);
+                                SoundService.PlaySound("urgent_notification.wav", loop: true);
 
                                 var notificationWindow = new NotificationWindow("🚨 紧急通知", capturedMessage, true);
                                 notificationWindow.Closed += async (s, e) =>
@@ -1325,7 +1324,7 @@ namespace CSD.Views
                     request.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
                 }
 
-                using var response = await _httpClient.SendAsync(request, cancellationToken);
+                using var response = await AppHttpClient.Instance.SendAsync(request, cancellationToken);
                 var responseBody = await response.Content.ReadAsStringAsync();
 
                 // 调试日志

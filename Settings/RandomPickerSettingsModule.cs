@@ -54,11 +54,11 @@ namespace CSD.Settings
         protected override void LoadSettings()
         {
             var settings = AppSettings.Values;
-            _randomPickerEnabledToggle.IsOn = settings.ContainsKey("randomPicker.enabled") ? (bool)(settings["randomPicker.enabled"] ?? true) : true;
+            _randomPickerEnabledToggle.IsOn = settings.GetBool("randomPicker.enabled", true);
             _randomPickerMinNumberBox.Value = ConvertToDouble(settings["randomPicker.minNumber"], 1.0);
             _randomPickerMaxNumberBox.Value = ConvertToDouble(settings["randomPicker.maxNumber"], 60.0);
             _randomPickerDefaultCountBox.Value = ConvertToDouble(settings["randomPicker.defaultCount"], 1.0);
-            _randomPickerAnimationToggle.IsOn = settings.ContainsKey("randomPicker.animation") ? (bool)(settings["randomPicker.animation"] ?? true) : true;
+            _randomPickerAnimationToggle.IsOn = settings.GetBool("randomPicker.animation", true);
         }
 
         protected override void HookAutoSaveHandlers()

@@ -53,7 +53,7 @@ namespace CSD.Settings
         protected override void LoadSettings()
         {
             var settings = AppSettings.Values;
-            _autoStartToggle.IsOn = settings.ContainsKey("Settings_AutoStartEnabled") && (bool)(settings["Settings_AutoStartEnabled"] ?? false);
+            _autoStartToggle.IsOn = settings.GetBool("Settings_AutoStartEnabled", false);
 
             var savedMethod = settings["Settings_AutoStartMethod"] as string;
             if (!string.IsNullOrWhiteSpace(savedMethod))

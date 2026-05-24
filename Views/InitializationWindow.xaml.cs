@@ -938,7 +938,7 @@ namespace CSD.Views
                 await httpClient.PostAsync($"{serverUrl}/devices", deviceContent);
 
                 // 2. Get token
-                var tokenPayload = new { @namespace = uuid, password = "", appId = "d158067f53627d2b98babe8bffd2fd7d" };
+                var tokenPayload = new { @namespace = uuid, password = "", appId = Secrets.AppId };
                 var tokenContent = new StringContent(JsonSerializer.Serialize(tokenPayload), Encoding.UTF8, "application/json");
                 var response = await httpClient.PostAsync($"{serverUrl}/apps/auth/token", tokenContent);
                 var responseString = await response.Content.ReadAsStringAsync();
@@ -1001,7 +1001,7 @@ namespace CSD.Views
                 var tokenPayload = new Dictionary<string, string>
                 {
                     { "namespace", ns },
-                    { "appId", "d158067f53627d2b98babe8bffd2fd7d" }
+                    { "appId", Secrets.AppId }
                 };
                 
                 if (!string.IsNullOrEmpty(pwd))

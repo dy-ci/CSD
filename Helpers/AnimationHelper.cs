@@ -22,8 +22,8 @@ namespace CSD.Helpers
     {
         public static void AnimateEntrance(UIElement element, float fromY = 20f, float fromOpacity = 0f, double durationMs = 360, double delayMs = 0)
         {
-            var enabled = (bool)(AppSettings.Values["Settings_PageTransitionAnimations"] ?? true);
-            var highFramerate = (bool)(AppSettings.Values["Settings_HighFramerateRendering"] ?? true);
+            var enabled = AppSettings.Values.GetBool("Settings_PageTransitionAnimations", true);
+            var highFramerate = AppSettings.Values.GetBool("Settings_HighFramerateRendering", true);
             
             if (element.XamlRoot is null && element is FrameworkElement frameworkElement)
             {
@@ -69,8 +69,8 @@ namespace CSD.Helpers
 
         public static void AnimateOpacity(UIElement element, float fromOpacity, float toOpacity, double durationMs = 220)
         {
-            var enabled = (bool)(AppSettings.Values["Settings_PageTransitionAnimations"] ?? true);
-            var highFramerate = (bool)(AppSettings.Values["Settings_HighFramerateRendering"] ?? true);
+            var enabled = AppSettings.Values.GetBool("Settings_PageTransitionAnimations", true);
+            var highFramerate = AppSettings.Values.GetBool("Settings_HighFramerateRendering", true);
 
             if (!enabled)
             {
@@ -97,8 +97,8 @@ namespace CSD.Helpers
 
         public static void AnimateToOpacity(UIElement element, float toOpacity, double durationMs = 220)
         {
-            var enabled = (bool)(AppSettings.Values["Settings_PageTransitionAnimations"] ?? true);
-            var highFramerate = (bool)(AppSettings.Values["Settings_HighFramerateRendering"] ?? true);
+            var enabled = AppSettings.Values.GetBool("Settings_PageTransitionAnimations", true);
+            var highFramerate = AppSettings.Values.GetBool("Settings_HighFramerateRendering", true);
 
             if (!enabled)
             {
@@ -136,8 +136,8 @@ namespace CSD.Helpers
 
         public static void AnimateOffsetY(UIElement element, float toY, double durationMs = 240, float overshoot = 4f)
         {
-            var enabled = (bool)(AppSettings.Values["Settings_PageTransitionAnimations"] ?? true);
-            var highFramerate = (bool)(AppSettings.Values["Settings_HighFramerateRendering"] ?? true);
+            var enabled = AppSettings.Values.GetBool("Settings_PageTransitionAnimations", true);
+            var highFramerate = AppSettings.Values.GetBool("Settings_HighFramerateRendering", true);
 
             if (!enabled)
             {
@@ -181,8 +181,8 @@ namespace CSD.Helpers
 
         public static void AnimateScaleTo(UIElement element, float toScale, double durationMs = 220, float overshoot = 0.02f)
         {
-            var enabled = (bool)(AppSettings.Values["Settings_PageTransitionAnimations"] ?? true);
-            var highFramerate = (bool)(AppSettings.Values["Settings_HighFramerateRendering"] ?? true);
+            var enabled = AppSettings.Values.GetBool("Settings_PageTransitionAnimations", true);
+            var highFramerate = AppSettings.Values.GetBool("Settings_HighFramerateRendering", true);
 
             if (!enabled)
             {
@@ -232,8 +232,8 @@ namespace CSD.Helpers
 
         public static void AnimateBrushColor(SolidColorBrush brush, Windows.UI.Color toColor, double durationMs = 220)
         {
-            var enabled = (bool)(AppSettings.Values["Settings_ElementInteractionAnimations"] ?? true);
-            var highFramerate = (bool)(AppSettings.Values["Settings_HighFramerateRendering"] ?? true);
+            var enabled = AppSettings.Values.GetBool("Settings_ElementInteractionAnimations", true);
+            var highFramerate = AppSettings.Values.GetBool("Settings_HighFramerateRendering", true);
 
             if (!enabled)
             {
@@ -334,8 +334,8 @@ namespace CSD.Helpers
         private static void AnimateInteraction(UIElement element, float scale, double durationMs)
         {
             var visual = ElementCompositionPreview.GetElementVisual(element);
-            var enabled = (bool)(AppSettings.Values["Settings_ElementInteractionAnimations"] ?? true);
-            var highFramerate = (bool)(AppSettings.Values["Settings_HighFramerateRendering"] ?? true);
+            var enabled = AppSettings.Values.GetBool("Settings_ElementInteractionAnimations", true);
+            var highFramerate = AppSettings.Values.GetBool("Settings_HighFramerateRendering", true);
             
             if (!enabled)
             {

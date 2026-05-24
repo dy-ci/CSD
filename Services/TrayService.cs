@@ -100,6 +100,16 @@ namespace CSD.Services
             Application.Current.Exit();
         }
 
+        public void ShowNotification(string title, string text)
+        {
+            if (_disposed || _taskbarIcon == null) return;
+            try
+            {
+                _taskbarIcon.ShowNotification(title, text);
+            }
+            catch { }
+        }
+
         public void Dispose()
         {
             if (_disposed) return;

@@ -39,7 +39,6 @@ namespace CSD.Views
 
     public sealed partial class AttendanceWindow : Window
     {
-        private readonly HttpClient _httpClient = new();
         private readonly DateTime _attendanceDate;
         private readonly List<StudentAttendance> _students = new();
         private readonly List<StudentAttendance> _filteredStudents = new();
@@ -202,7 +201,7 @@ namespace CSD.Views
                     request.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
                 }
 
-                using var response = await _httpClient.SendAsync(request);
+                                using var response = await AppHttpClient.Instance.SendAsync(request);
                 var responseBody = await response.Content.ReadAsStringAsync();
 
                 if (!response.IsSuccessStatusCode)

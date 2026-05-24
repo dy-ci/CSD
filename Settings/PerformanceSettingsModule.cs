@@ -239,11 +239,11 @@ namespace CSD.Settings
         protected override void LoadSettings()
         {
             var settings = AppSettings.Values;
-            _pageTransitionSwitch.IsOn = (bool)(settings["Settings_PageTransitionAnimations"] ?? true);
-            _elementInteractionSwitch.IsOn = (bool)(settings["Settings_ElementInteractionAnimations"] ?? true);
-            _backgroundBlurSwitch.IsOn = (bool)(settings["Settings_BackgroundBlurEffects"] ?? true);
-            _highFramerateSwitch.IsOn = (bool)(settings["Settings_HighFramerateRendering"] ?? true);
-            _highResResourceSwitch.IsOn = (bool)(settings["Settings_HighResResourceLoading"] ?? true);
+            _pageTransitionSwitch.IsOn = settings.GetBool("Settings_PageTransitionAnimations", true);
+            _elementInteractionSwitch.IsOn = settings.GetBool("Settings_ElementInteractionAnimations", true);
+            _backgroundBlurSwitch.IsOn = settings.GetBool("Settings_BackgroundBlurEffects", true);
+            _highFramerateSwitch.IsOn = settings.GetBool("Settings_HighFramerateRendering", true);
+            _highResResourceSwitch.IsOn = settings.GetBool("Settings_HighResResourceLoading", true);
         }
 
         protected override void HookAutoSaveHandlers()

@@ -42,7 +42,7 @@ namespace CSD.Settings
             var settings = AppSettings.Values;
             _carouselIntervalBox.Value = (double)(settings["Settings_CarouselInterval"] ?? 5.0);
             _carouselFontSizeBox.Value = (double)(settings["Settings_CarouselFontSize"] ?? 48.0);
-            _debugModeToggle.IsOn = settings.ContainsKey("Settings_DebugMode") && (bool)(settings["Settings_DebugMode"] ?? false);
+            _debugModeToggle.IsOn = settings.GetBool("Settings_DebugMode", false);
         }
 
         protected override void HookAutoSaveHandlers()

@@ -36,7 +36,6 @@ namespace CSD.Views
         }
 
         private readonly Action _onSettingsChanged;
-        private readonly HttpClient _settingsHttpClient = new();
         private readonly TextBlock _pageTitleText;
         private readonly TextBlock _pageDescriptionText;
         private readonly Grid _detailsHost;
@@ -61,7 +60,7 @@ namespace CSD.Views
                 onSettingsChanged();
                 VisualHelper.ApplyWindowBackdrop(this);
             };
-            _settingsContext = new SettingsContext(this, _settingsHttpClient);
+            _settingsContext = new SettingsContext(this, AppHttpClient.Instance);
 
             Title = "设置";
             VisualHelper.ApplyWindowBackdrop(this);

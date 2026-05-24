@@ -10,7 +10,7 @@ namespace CSD.Helpers
     {
         public static void ApplyWindowBackdrop(Window window)
         {
-            var enabled = (bool)(AppSettings.Values["Settings_BackgroundBlurEffects"] ?? true);
+            var enabled = AppSettings.Values.GetBool("Settings_BackgroundBlurEffects", true);
             
             if (enabled)
             {
@@ -27,12 +27,12 @@ namespace CSD.Helpers
 
         public static bool IsHighResResourceEnabled()
         {
-            return (bool)(AppSettings.Values["Settings_HighResResourceLoading"] ?? true);
+            return AppSettings.Values.GetBool("Settings_HighResResourceLoading", true);
         }
 
         public static bool IsHighFramerateEnabled()
         {
-            return (bool)(AppSettings.Values["Settings_HighFramerateRendering"] ?? true);
+            return AppSettings.Values.GetBool("Settings_HighFramerateRendering", true);
         }
     }
 }
