@@ -539,6 +539,8 @@
                                 <CheckBox x:Name="InitPageAnimCheck" Content="页面过渡动画" IsChecked="True" />
                                 <CheckBox x:Name="InitInterAnimCheck" Content="元素交互动画" IsChecked="True" />
                                 <CheckBox x:Name="InitBlurCheck" Content="背景模糊特效" IsChecked="True" />
+                                <CheckBox x:Name="InitHighRateCheck" Content="高帧率渲染" IsChecked="True" />
+                                <CheckBox x:Name="InitHighResCheck" Content="高清资源加载" IsChecked="True" />
                             </StackPanel>
                         </Border>
                         <TextBlock Text="低配设备建议关闭以上项以获得更流畅的体验" FontSize="11" Foreground="{ThemeResource TextFillColorTertiaryBrush}" Margin="4,0" />

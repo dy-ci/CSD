@@ -604,31 +604,23 @@ namespace CSD.Views
             if (info.Cpus.Count > 0) InitCpuText.Text = info.Cpus[0].Model;
             if (info.Gpus.Count > 0) InitGpuText.Text = info.Gpus[0].Name;
 
-            // Apply smart presets
-            if (info.Score <= 40)
-            {
-                InitPageAnimCheck.IsChecked = false;
-                InitInterAnimCheck.IsChecked = false;
-                InitBlurCheck.IsChecked = false;
-                InitScoreText.Foreground = new SolidColorBrush(Microsoft.UI.Colors.OrangeRed);
-            }
-            else if (info.Score <= 60)
-            {
-                InitBlurCheck.IsChecked = false;
-                InitScoreText.Foreground = new SolidColorBrush(Microsoft.UI.Colors.Orange);
-            }
-            else
-            {
-                InitScoreText.Foreground = new SolidColorBrush(Microsoft.UI.Colors.LimeGreen);
-            }
+            // Apply smart presets and theme-aware color
+            var presets = PerformanceFormatter.GetOptimizationPresets(info.Score);
+            InitPageAnimCheck.IsChecked = presets.PageAnim;
+            InitInterAnimCheck.IsChecked = presets.InterAnim;
+            InitBlurCheck.IsChecked = presets.Blur;
+            InitHighRateCheck.IsChecked = presets.HighRate;
+            InitHighResCheck.IsChecked = presets.HighRes;
+            InitScoreText.Foreground = PerformanceFormatter.GetScoreBrush(info.Score);
         }
 
         private void PerformanceFinishButton_Click(object sender, RoutedEventArgs e)
         {
-            // Persist the choices from the init screen
             AppSettings.Values["Settings_PageTransitionAnimations"] = InitPageAnimCheck.IsChecked == true;
             AppSettings.Values["Settings_ElementInteractionAnimations"] = InitInterAnimCheck.IsChecked == true;
             AppSettings.Values["Settings_BackgroundBlurEffects"] = InitBlurCheck.IsChecked == true;
+            AppSettings.Values["Settings_HighFramerateRendering"] = InitHighRateCheck.IsChecked == true;
+            AppSettings.Values["Settings_HighResResourceLoading"] = InitHighResCheck.IsChecked == true;
 
             var mainWindow = new MainWindow();
             mainWindow.Activate();
