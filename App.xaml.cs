@@ -137,6 +137,9 @@ namespace CSD
         {
             var savedToken = AppSettings.Values[TokenSettingsKey] as string;
             _window = string.IsNullOrWhiteSpace(savedToken) ? new InitializationWindow() : new MainWindow();
+
+            _ = Task.Delay(400).ContinueWith(_ => { try { SoundService.PlaySound("startsound.wav"); } catch { } });
+
             _window.Activate();
 
             TrayService = new TrayService(_window);
