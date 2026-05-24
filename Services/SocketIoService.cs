@@ -137,8 +137,15 @@ namespace CSD.Services
             var client = _client;
             if (client != null && client.Connected)
             {
-                await client.EmitAsync("join-token", new object[] { new { token } });
-                Debug.WriteLine($"Socket.IO Joined token: {token}");
+                try
+                {
+                    await client.EmitAsync("join-token", new object[] { new { token } });
+                    Debug.WriteLine($"Socket.IO Joined token: {token}");
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Socket.IO JoinToken Error: {ex.Message}");
+                }
             }
         }
 
@@ -147,7 +154,14 @@ namespace CSD.Services
             var client = _client;
             if (client != null && client.Connected)
             {
-                await client.EmitAsync("leave-token", new object[] { new { token } });
+                try
+                {
+                    await client.EmitAsync("leave-token", new object[] { new { token } });
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Socket.IO LeaveToken Error: {ex.Message}");
+                }
             }
         }
 
@@ -156,7 +170,14 @@ namespace CSD.Services
             var client = _client;
             if (client != null && client.Connected)
             {
-                await client.EmitAsync("send-event", new object[] { new { type, content } });
+                try
+                {
+                    await client.EmitAsync("send-event", new object[] { new { type, content } });
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Socket.IO SendEvent Error: {ex.Message}");
+                }
             }
         }
 

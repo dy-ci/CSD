@@ -100,8 +100,8 @@ namespace CSD.Settings
         public override void PersistSettings()
         {
             var settings = AppSettings.Values;
-            settings["Settings_NormalNotificationSound"] = _normalSoundCombo.SelectedItem as string;
-            settings["Settings_UrgentNotificationSound"] = _urgentSoundCombo.SelectedItem as string;
+            settings["Settings_NormalNotificationSound"] = _normalSoundCombo.SelectedItem as string ?? string.Empty;
+            settings["Settings_UrgentNotificationSound"] = _urgentSoundCombo.SelectedItem as string ?? string.Empty;
         }
     }
 }
