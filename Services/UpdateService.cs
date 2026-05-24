@@ -100,6 +100,24 @@ namespace CSD.Services
             AppSettings.Values["UpdateChannel"] = channel;
         }
 
+        public static string GetUpdateCheckMode()
+        {
+            try
+            {
+                var mode = AppSettings.Values["UpdateCheckMode"] as string;
+                return string.IsNullOrWhiteSpace(mode) ? "startup" : mode;
+            }
+            catch
+            {
+                return "startup";
+            }
+        }
+
+        public static void SetUpdateCheckMode(string mode)
+        {
+            AppSettings.Values["UpdateCheckMode"] = mode;
+        }
+
         public async Task<UpdateInfo?> CheckForUpdateAsync(CancellationToken cancellationToken = default)
         {
             try

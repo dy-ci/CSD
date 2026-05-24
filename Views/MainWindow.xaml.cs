@@ -493,14 +493,27 @@ namespace CSD.Views
         {
             try
             {
+                if (UpdateService.GetUpdateCheckMode() == "never")
+                    return;
+
                 var updateService = new UpdateService();
                 var updateInfo = await updateService.CheckForUpdateAsync();
 
                 if (updateInfo?.HasUpdate == true)
                 {
-                    // 有更新时启动关于按钮闪烁动画
                     StartAboutButtonBlinkAnimation();
+                    _ = SilentUpdateAsync(updateInfo);
                 }
+            }
+            catch { }
+        }
+
+        private async Task SilentUpdateAsync(UpdateInfo updateInfo)
+        {
+            try
+            {
+                var installer = new UpdateInstaller();
+                await installer.DownloadAndInstallAsync(updateInfo);
             }
             catch { }
         }
