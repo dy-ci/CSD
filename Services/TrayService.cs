@@ -1,4 +1,5 @@
 using H.NotifyIcon;
+using H.NotifyIcon.Core;
 using H.NotifyIcon.Interop;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -111,6 +112,12 @@ namespace CSD.Services
             flyout.Items.Add(quitItem);
 
             return flyout;
+        }
+
+        public void ShowNotification(string title, string text, NotificationIcon icon = NotificationIcon.Info)
+        {
+            if (_disposed || _taskbarIcon == null) return;
+            _taskbarIcon.ShowNotification(title, text, icon);
         }
 
         public void ShowWindow()

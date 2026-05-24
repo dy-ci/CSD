@@ -32,6 +32,25 @@ namespace CSD.Services
             }
         }
 
+        public static void PlayAbsolutePathSound(string absolutePath, bool loop = false)
+        {
+            try
+            {
+                if (_mediaPlayer == null)
+                    _mediaPlayer = new MediaPlayer();
+                if (File.Exists(absolutePath))
+                {
+                    _mediaPlayer.Source = MediaSource.CreateFromUri(new Uri("file:///" + absolutePath.Replace('\\', '/')));
+                    _mediaPlayer.IsLoopingEnabled = loop;
+                    _mediaPlayer.Play();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to play sound {absolutePath}: {ex.Message}");
+            }
+        }
+
         public static void StopSound()
         {
             if (_mediaPlayer != null)

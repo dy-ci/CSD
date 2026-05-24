@@ -113,6 +113,7 @@
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
                 <Button
@@ -193,6 +194,14 @@
                     VerticalAlignment="Center"
                     Click="AttendanceButton_Click"
                     Content="考勤"
+                    Margin="8,0,0,0" />
+
+                <Button
+                    x:Name="SendNotificationButton"
+                    Grid.Column="8"
+                    VerticalAlignment="Center"
+                    Click="SendNotificationButton_Click"
+                    Content="发送通知"
                     Margin="8,0,0,0" />
             </Grid>
 
