@@ -27,6 +27,8 @@ namespace CSD.Services
         {
         }
 
+        public bool IsConnected => _client?.Connected ?? false;
+
         public string GetServerUrl()
         {
             var cfg = AppSettings.Values.TryGetValue("Settings_ServerUrl", out var val) ? val?.ToString() : null;

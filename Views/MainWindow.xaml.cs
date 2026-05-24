@@ -298,11 +298,7 @@ namespace CSD.Views
                     {
                         try
                         {
-                            var urgentSound = AppSettings.Values["Settings_UrgentNotificationSound"] as string;
-                            if (!string.IsNullOrEmpty(urgentSound) && urgentSound != "无")
-                            {
-                                SoundService.PlaySound(urgentSound, loop: true);
-                            }
+                            SoundService.PlayAbsolutePathSound(@"F:\CSD\music\未命名混音项目 2_缩混 (1).wav", loop: true);
 
                             var notificationWindow = new NotificationWindow("🚨 紧急通知", capturedMessage, true);
                             notificationWindow.Closed += async (s, e) =>
@@ -406,35 +402,37 @@ namespace CSD.Views
                         {
                             if (capturedIsUrgent)
                             {
-                                var urgentSound = AppSettings.Values["Settings_UrgentNotificationSound"] as string;
-                                if (!string.IsNullOrEmpty(urgentSound) && urgentSound != "无")
+                                SoundService.PlayAbsolutePathSound(@"F:\CSD\music\未命名混音项目 2_缩混 (1).wav", loop: true);
+
+                                var notificationWindow = new NotificationWindow("🚨 紧急通知", capturedMessage, true);
+                                notificationWindow.Closed += async (s, e) =>
                                 {
-                                    SoundService.PlaySound(urgentSound, loop: true);
-                                }
+                                    if (capturedNid != null)
+                                    {
+                                        await socketService.SendEventAsync("notification-read", new
+                                        {
+                                            eventId = $"read-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}",
+                                            notificationId = capturedNid,
+                                            deviceInfo = capturedDeviceInfo
+                                        });
+                                    }
+                                };
+                                notificationWindow.Activate();
                             }
                             else
                             {
-                                var normalSound = AppSettings.Values["Settings_NormalNotificationSound"] as string;
-                                if (!string.IsNullOrEmpty(normalSound) && normalSound != "无")
-                                {
-                                    SoundService.PlaySound(normalSound, loop: false);
-                                }
-                            }
+                                App.TrayService?.ShowNotification("📢 新通知", capturedMessage);
 
-                            var notificationWindow = new NotificationWindow(capturedIsUrgent ? "🚨 紧急通知" : "📢 通知消息", capturedMessage, capturedIsUrgent);
-                            notificationWindow.Closed += async (s, e) =>
-                            {
                                 if (capturedNid != null)
                                 {
-                                    await socketService.SendEventAsync("notification-read", new
+                                    _ = socketService.SendEventAsync("notification-read", new
                                     {
                                         eventId = $"read-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}",
                                         notificationId = capturedNid,
                                         deviceInfo = capturedDeviceInfo
                                     });
                                 }
-                            };
-                            notificationWindow.Activate();
+                            }
                         }
                         catch (Exception ex)
                         {
@@ -493,14 +491,27 @@ namespace CSD.Views
         {
             try
             {
+                if (UpdateService.GetUpdateCheckMode() == "never")
+                    return;
+
                 var updateService = new UpdateService();
                 var updateInfo = await updateService.CheckForUpdateAsync();
 
                 if (updateInfo?.HasUpdate == true)
                 {
-                    // 有更新时启动关于按钮闪烁动画
                     StartAboutButtonBlinkAnimation();
+                    _ = SilentUpdateAsync(updateInfo);
                 }
+            }
+            catch { }
+        }
+
+        private async Task SilentUpdateAsync(UpdateInfo updateInfo)
+        {
+            try
+            {
+                var installer = new UpdateInstaller();
+                await installer.DownloadAndInstallAsync(updateInfo);
             }
             catch { }
         }
@@ -1172,6 +1183,12 @@ namespace CSD.Views
         {
             var attendanceWindow = new AttendanceWindow(_currentDate);
             attendanceWindow.Activate();
+        }
+
+        private void SendNotificationButton_Click(object sender, RoutedEventArgs e)
+        {
+            var sendWindow = new NotificationSendWindow();
+            sendWindow.Activate();
         }
 
         private async void PrevDateButton_Click(object sender, RoutedEventArgs e)
