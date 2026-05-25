@@ -91,8 +91,8 @@ namespace CSD.Views
 
         private void SetChoiceIcons()
         {
-            CloudSyncIcon.Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(AppSettings.GetAssetUri("icons/ic_gallery_cloud_synchronization.ico"));
-            LocalOnlyIcon.Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(AppSettings.GetAssetUri("icons/ic_device_matebook.ico"));
+            CloudSyncIcon.Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(AppSettings.GetAssetUri("icons/ic_gallery_cloud_synchronization.ico")) { DecodePixelWidth = 36, DecodePixelHeight = 36 };
+            LocalOnlyIcon.Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(AppSettings.GetAssetUri("icons/ic_device_matebook.ico")) { DecodePixelWidth = 36, DecodePixelHeight = 36 };
         }
 
         private void ConfigureIntegratedTitleBar()
@@ -155,7 +155,7 @@ namespace CSD.Views
                 VerticalAlignment = VerticalAlignment.Bottom,
                 Margin = new Thickness(0, 0, 0, 8),
                 Opacity = 0,
-                Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(AppSettings.GetAssetUri("icons/Classworks.ico"))
+                Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(AppSettings.GetAssetUri("icons/Classworks.ico")) { DecodePixelWidth = 80, DecodePixelHeight = 80 }
             };
             Grid.SetRow(_welcomeLogo, 0);
             _contentRoot.Children.Add(_welcomeLogo);

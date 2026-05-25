@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
+using System.Threading;
 
 
 using CSD.Views;
@@ -19,6 +20,8 @@ namespace CSD.Models
         private static readonly SettingsDictionary Settings = new();
 
         public static IDictionary<string, object> Values => Settings;
+
+        public static void Flush() => Settings.Flush();
 
         /// <summary>
         /// 获取应用资源文件的 URI（兼容打包和非打包部署）。
@@ -56,16 +59,19 @@ namespace CSD.Models
         public const string EditConfig = "classworks-config-edit";
     }
 
-    internal sealed class SettingsDictionary : IDictionary<string, object>
+    internal sealed class SettingsDictionary : IDictionary<string, object>, IDisposable
     {
         private static readonly JsonSerializerOptions SerializerOptions = new()
         {
             WriteIndented = true
         };
+        private const int DebounceMs = 500;
 
         private readonly string _settingsFilePath;
         private readonly Dictionary<string, object> _settings;
         private readonly object _syncRoot = new();
+        private Timer? _saveTimer;
+        private bool _dirty;
 
         public SettingsDictionary()
         {
@@ -77,6 +83,14 @@ namespace CSD.Models
             _settingsFilePath = Path.Combine(appDataPath, "settings.json");
             _settings = LoadSettings();
         }
+
+        public void Dispose()
+        {
+            Flush();
+            _saveTimer?.Dispose();
+        }
+
+        public void Flush() => FlushSave();
 
         public object this[string key]
         {
@@ -92,8 +106,8 @@ namespace CSD.Models
                 lock (_syncRoot)
                 {
                     _settings[key] = value;
-                    SaveSettings();
                 }
+                ScheduleSave();
             }
         }
 
@@ -137,8 +151,8 @@ namespace CSD.Models
             lock (_syncRoot)
             {
                 _settings.Add(key, value);
-                SaveSettings();
             }
+            ScheduleSave();
         }
 
         public bool ContainsKey(string key)
@@ -151,16 +165,16 @@ namespace CSD.Models
 
         public bool Remove(string key)
         {
+            bool removed;
             lock (_syncRoot)
             {
-                var removed = _settings.Remove(key);
-                if (removed)
-                {
-                    SaveSettings();
-                }
-
-                return removed;
+                removed = _settings.Remove(key);
             }
+            if (removed)
+            {
+                ScheduleSave();
+            }
+            return removed;
         }
 
         public bool TryGetValue(string key, out object value)
@@ -188,8 +202,8 @@ namespace CSD.Models
             lock (_syncRoot)
             {
                 _settings.Clear();
-                SaveSettings();
             }
+            ScheduleSave();
         }
 
         public bool Contains(KeyValuePair<string, object> item)
@@ -210,16 +224,16 @@ namespace CSD.Models
 
         public bool Remove(KeyValuePair<string, object> item)
         {
+            bool removed;
             lock (_syncRoot)
             {
-                var removed = ((ICollection<KeyValuePair<string, object>>)_settings).Remove(item);
-                if (removed)
-                {
-                    SaveSettings();
-                }
-
-                return removed;
+                removed = ((ICollection<KeyValuePair<string, object>>)_settings).Remove(item);
             }
+            if (removed)
+            {
+                ScheduleSave();
+            }
+            return removed;
         }
 
         public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
@@ -270,11 +284,33 @@ namespace CSD.Models
             }
         }
 
-        private void SaveSettings()
+        private void ScheduleSave()
         {
+            _dirty = true;
+            if (_saveTimer == null)
+            {
+                _saveTimer = new Timer(_ =>
+                {
+                    FlushSave();
+                }, null, DebounceMs, Timeout.Infinite);
+            }
+            else
+            {
+                _saveTimer.Change(DebounceMs, Timeout.Infinite);
+            }
+        }
+
+        private void FlushSave()
+        {
+            string? json = null;
+            lock (_syncRoot)
+            {
+                if (!_dirty) return;
+                _dirty = false;
+                json = JsonSerializer.Serialize(_settings, SerializerOptions);
+            }
             try
             {
-                var json = JsonSerializer.Serialize(_settings, SerializerOptions);
                 File.WriteAllText(_settingsFilePath, json);
             }
             catch

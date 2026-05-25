@@ -52,7 +52,7 @@ namespace CSD.Views
             {
                 Width = 72,
                 Height = 72,
-                Source = new BitmapImage(AppSettings.GetAssetUri("Assets/Classworks.ico")),
+                Source = new BitmapImage(AppSettings.GetAssetUri("Assets/Classworks.ico")) { DecodePixelWidth = 72, DecodePixelHeight = 72 },
                 HorizontalAlignment = HorizontalAlignment.Center
             };
             heroStack.Children.Add(iconImage);
@@ -461,7 +461,7 @@ namespace CSD.Views
                 CornerRadius = new CornerRadius(16),
                 Child = new Image
                 {
-                    Source = new BitmapImage(new Uri(avatarUri)),
+                    Source = new BitmapImage(new Uri(avatarUri)) { DecodePixelWidth = 32, DecodePixelHeight = 32 },
                     Stretch = Stretch.UniformToFill
                 }
             });

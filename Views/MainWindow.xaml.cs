@@ -52,12 +52,22 @@ namespace CSD.Views
         private readonly DispatcherTimer _autoRefreshTimer = new();
         private List<HomeworkItem> _carouselItems = new();
         private DebugWindow? _debugWindow;
+        private Window? _settingsWindow;
         private bool _isUpdatingCalendarSelection;
         private bool _isContentDialogOpen;
         private bool _pendingCloseDialog;
 
         // 当前作业的科目名称集合（用于判断未完成作业）
         private HashSet<string> _currentHomeworkSubjects = new();
+
+        private readonly object _kvRefreshLock = new();
+        private CancellationTokenSource? _kvRefreshCts;
+
+        private string? _cachedSubjectConfig;
+        private DateTime _subjectConfigFetchTime;
+        private static readonly TimeSpan SubjectConfigCacheTtl = TimeSpan.FromMinutes(5);
+
+        private CancellationTokenSource? _loadCts;
 
         private string BaseUrl
         {
@@ -84,9 +94,6 @@ namespace CSD.Views
                 }
             }
             catch { }
-
-            // 检查并创建桌面快捷方式
-            EnsureDesktopShortcut();
 
             RestoreWindowState();
 
@@ -180,8 +187,16 @@ namespace CSD.Views
                     }
                 }
 
+                lock (_kvRefreshLock)
+                {
+                    _kvRefreshCts?.Cancel();
+                    _kvRefreshCts?.Dispose();
+                    _kvRefreshCts = null;
+                }
+
                 await SocketIoService.Instance.DisposeAsync();
                 App.TrayService?.Dispose();
+                AppSettings.Flush();
                 Application.Current.Exit();
             }
             finally
@@ -217,6 +232,8 @@ namespace CSD.Views
                 AnimationHelper.AnimateEntrance(rootContent, fromY: 16f, durationMs: 380);
                 AnimationHelper.ApplyStandardInteractions(rootContent);
             }
+            // 延迟执行非关键启动任务（快捷方式创建涉及 COM 互操作）
+            _ = Task.Run(() => { try { EnsureDesktopShortcut(); } catch { } });
             _ = CheckForUpdatesAsync();
             _ = InitializeSocketIoAsync();
         }
@@ -227,11 +244,24 @@ namespace CSD.Views
 
             socketService.OnKvKeyChanged += (data) =>
             {
-                DispatcherQueue.TryEnqueue(() =>
+                lock (_kvRefreshLock)
                 {
-                    // KV data changed, refresh homework
-                    _ = RefreshAllGlobalComponentsAsync();
-                });
+                    _kvRefreshCts?.Cancel();
+                    _kvRefreshCts?.Dispose();
+                    _kvRefreshCts = new CancellationTokenSource();
+                    var token = _kvRefreshCts.Token;
+                    _ = Task.Delay(500, token).ContinueWith(_ =>
+                    {
+                        if (!token.IsCancellationRequested)
+                        {
+                            _cachedSubjectConfig = null;
+                            DispatcherQueue.TryEnqueue(() =>
+                            {
+                                _ = RefreshAllGlobalComponentsAsync();
+                            });
+                        }
+                    }, token);
+                }
             };
 
             socketService.OnUrgentNotice += async (data) =>
@@ -420,17 +450,7 @@ namespace CSD.Views
                             }
                             else
                             {
-                                App.TrayService?.ShowNotification("📢 新通知", capturedMessage);
-
-                                if (capturedNid != null)
-                                {
-                                    _ = socketService.SendEventAsync("notification-read", new
-                                    {
-                                        eventId = $"read-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}",
-                                        notificationId = capturedNid,
-                                        deviceInfo = capturedDeviceInfo
-                                    });
-                                }
+                                ToastHelper.ShowToast("📢 新通知", capturedMessage, capturedNid);
                             }
                         }
                         catch (Exception ex)
@@ -1145,11 +1165,25 @@ namespace CSD.Views
 
         private async void RefreshHomeworkButton_Click(object sender, RoutedEventArgs e)
         {
-            await LoadHomeworkAsync(_currentDate);
+            try
+            {
+                // 手动刷新时清除科目配置缓存
+                _cachedSubjectConfig = null;
+                await LoadHomeworkAsync(_currentDate);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Refresh failed: {ex.Message}");
+            }
         }
 
         private void OpenSettingsButton_Click(object sender, RoutedEventArgs e)
         {
+            if (_settingsWindow != null)
+            {
+                _settingsWindow.Activate();
+                return;
+            }
             var settingsWindow = new SettingsWindow(() =>
             {
                 RestartAutoRefreshTimer();
@@ -1163,6 +1197,8 @@ namespace CSD.Views
                     _debugWindow = null;
                 }
             });
+            settingsWindow.Closed += (_, _) => _settingsWindow = null;
+            _settingsWindow = settingsWindow;
             settingsWindow.Activate();
         }
 
@@ -1194,36 +1230,51 @@ namespace CSD.Views
 
         private async void PrevDateButton_Click(object sender, RoutedEventArgs e)
         {
-            _currentDate = _currentDate.AddDays(-1);
-            await LoadHomeworkAsync(_currentDate);
+            try
+            {
+                _currentDate = _currentDate.AddDays(-1);
+                await LoadHomeworkAsync(_currentDate);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"PrevDate failed: {ex.Message}");
+            }
         }
 
         private async void NextDateButton_Click(object sender, RoutedEventArgs e)
         {
-            _currentDate = _currentDate.AddDays(1);
-            await LoadHomeworkAsync(_currentDate);
+            try
+            {
+                _currentDate = _currentDate.AddDays(1);
+                await LoadHomeworkAsync(_currentDate);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"NextDate failed: {ex.Message}");
+            }
+        }
+
+        private async void DateCalendarView_SelectedDatesChanged(CalendarView sender, CalendarViewSelectedDatesChangedEventArgs args)
+        {
+            try
+            {
+                if (_isUpdatingCalendarSelection || sender.SelectedDates.Count == 0)
+                {
+                    return;
+                }
+
+                _currentDate = sender.SelectedDates[0].Date;
+                await LoadHomeworkAsync(_currentDate);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"DateCalendarView failed: {ex.Message}");
+            }
         }
 
         private void DateFlyout_Opening(object sender, object e)
         {
             UpdateDateDisplay();
-        }
-
-        private async void DateCalendarView_SelectedDatesChanged(CalendarView sender, CalendarViewSelectedDatesChangedEventArgs args)
-        {
-            if (_isUpdatingCalendarSelection || sender.SelectedDates.Count == 0)
-            {
-                return;
-            }
-
-            var selectedDate = sender.SelectedDates[0].Date;
-            if (DateFlyout.IsOpen)
-            {
-                DateFlyout.Hide();
-            }
-
-            _currentDate = selectedDate.Date;
-            await LoadHomeworkAsync(_currentDate);
         }
 
         private void UpdateDateDisplay()
@@ -1258,6 +1309,12 @@ namespace CSD.Views
 
         private async Task LoadHomeworkAsync(DateTime date)
         {
+            // 取消之前的未完成请求
+            _loadCts?.Cancel();
+            _loadCts?.Dispose();
+            _loadCts = new CancellationTokenSource();
+            var ct = _loadCts.Token;
+
             // 增加版本号并记录当前版本
             int currentSequence = ++_loadingSequence;
 
@@ -1272,26 +1329,26 @@ namespace CSD.Views
                 : $"正在加载 {date:yyyy-MM-dd} 的作业...");
             HomeworkContainer.Children.Clear();
 
-            var responseBody = await SendKvRequestAsync(HttpMethod.Get, $"/kv/{Uri.EscapeDataString(dateKey)}");
+            var responseBody = await SendKvRequestAsync(HttpMethod.Get, $"/kv/{Uri.EscapeDataString(dateKey)}", cancellationToken: ct);
             
             // 如果已有更新的请求，放弃本次结果
-            if (currentSequence != _loadingSequence)
+            if (currentSequence != _loadingSequence || ct.IsCancellationRequested)
                 return;
 
             if (string.IsNullOrWhiteSpace(responseBody))
             {
                 _currentHomeworkSubjects.Clear();
-                await LoadUndoneHomeworkAsync(currentSequence);
+                await LoadUndoneHomeworkAsync(currentSequence, ct);
                 return;
             }
 
             _rawJson = responseBody;
             await ShowHomeworkAsync(responseBody);
 
-            if (currentSequence != _loadingSequence)
+            if (currentSequence != _loadingSequence || ct.IsCancellationRequested)
                 return;
 
-            await LoadUndoneHomeworkAsync(currentSequence);
+            await LoadUndoneHomeworkAsync(currentSequence, ct);
         }
 
         private async Task<string?> SendKvRequestAsync(HttpMethod method, string path, string? jsonBody = null, CancellationToken cancellationToken = default)
@@ -1794,15 +1851,20 @@ namespace CSD.Views
 
         // ========== 未完成作业 ==========
 
-        private async Task LoadUndoneHomeworkAsync(int sequence)
+        private async Task LoadUndoneHomeworkAsync(int sequence, CancellationToken cancellationToken = default)
         {
-            if (sequence != _loadingSequence)
+            if (sequence != _loadingSequence || cancellationToken.IsCancellationRequested)
                 return;
 
             UndoneHomeworkPanel.Children.Clear();
 
-            // 获取全部作业列表
-            var listResponse = await SendKvRequestAsync(HttpMethod.Get, $"/kv/{ClassworksKvKeys.SubjectConfig}");
+            // 获取全部作业列表（带 5 分钟缓存）
+            if (_cachedSubjectConfig == null || DateTime.Now - _subjectConfigFetchTime > SubjectConfigCacheTtl)
+            {
+                _cachedSubjectConfig = await SendKvRequestAsync(HttpMethod.Get, $"/kv/{ClassworksKvKeys.SubjectConfig}", cancellationToken: cancellationToken);
+                _subjectConfigFetchTime = DateTime.Now;
+            }
+            var listResponse = _cachedSubjectConfig;
             if (string.IsNullOrWhiteSpace(listResponse))
             {
                 return;
@@ -1832,7 +1894,7 @@ namespace CSD.Views
                     .Where(h => !_currentHomeworkSubjects.Contains(h.Name))
                     .ToList();
 
-                if (sequence != _loadingSequence)
+                if (sequence != _loadingSequence || cancellationToken.IsCancellationRequested)
                     return;
 
                 // 始终显示科目按钮区域
@@ -1859,13 +1921,13 @@ namespace CSD.Views
 
                 for (int index = 0; index < undoneHomework.Count; index++)
                 {
-                    if (sequence != _loadingSequence)
+                    if (sequence != _loadingSequence || cancellationToken.IsCancellationRequested)
                         return;
 
                     var (order, name) = undoneHomework[index];
                     var button = new Button
                     {
-                        Content = $"#{order} {name}",
+                        Content = name,
                         Tag = name,
                         MinWidth = 100
                     };

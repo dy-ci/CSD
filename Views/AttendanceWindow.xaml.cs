@@ -9,6 +9,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using Windows.Graphics;
 using Windows.UI;
@@ -43,6 +44,7 @@ namespace CSD.Views
         private readonly List<StudentAttendance> _students = new();
         private readonly List<StudentAttendance> _filteredStudents = new();
         private readonly Dictionary<StudentAttendance, Border> _studentCards = new();
+        private CancellationTokenSource? _searchCts;
 
         private static readonly FontFamily MdiFont = new(AppSettings.GetAssetUri("Assets/MaterialDesignIconsDesktop.ttf").AbsoluteUri + "#Material Design Icons");
 
@@ -420,29 +422,44 @@ namespace CSD.Views
 
         public void UpdateStats()
         {
-            int present = _students.Count(s => s.Status == AttendanceStatus.Present);
-            int leave = _students.Count(s => s.Status == AttendanceStatus.Leave);
-            int late = _students.Count(s => s.Status == AttendanceStatus.Late);
-            int absent = _students.Count(s => s.Status == AttendanceStatus.Absent);
+            int present = 0, leave = 0, late = 0, absent = 0;
+            foreach (var s in _students)
+            {
+                switch (s.Status)
+                {
+                    case AttendanceStatus.Present: present++; break;
+                    case AttendanceStatus.Leave:   leave++;   break;
+                    case AttendanceStatus.Late:    late++;    break;
+                    case AttendanceStatus.Absent:  absent++;  break;
+                }
+            }
             int total = _students.Count;
-
             StatsText.Text = $"到课 {present} | 请假 {leave} | 迟到 {late} | 不参与 {absent} | 共 {total}";
         }
 
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            var searchText = SearchBox.Text.Trim().ToLower();
+            _searchCts?.Cancel();
+            _searchCts?.Dispose();
+            _searchCts = new CancellationTokenSource();
+            var token = _searchCts.Token;
 
-            _filteredStudents.Clear();
-            foreach (var student in _students)
+            _ = Task.Delay(200, token).ContinueWith(_ =>
             {
-                if (string.IsNullOrEmpty(searchText) || student.Name.ToLower().Contains(searchText))
-                {
-                    _filteredStudents.Add(student);
-                }
-            }
+                if (token.IsCancellationRequested) return;
+                var searchText = SearchBox.Text.Trim().ToLower();
 
-            BuildStudentsGrid();
+                _filteredStudents.Clear();
+                foreach (var student in _students)
+                {
+                    if (string.IsNullOrEmpty(searchText) || student.Name.ToLower().Contains(searchText))
+                    {
+                        _filteredStudents.Add(student);
+                    }
+                }
+
+                DispatcherQueue.TryEnqueue(() => BuildStudentsGrid());
+            }, token);
         }
 
         private void SetAllStatus(AttendanceStatus status)

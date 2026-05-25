@@ -19,8 +19,6 @@ namespace CSD.Services
 {
     public sealed class UpdateService
     {
-        private static readonly HttpClient _httpClient = new();
-
         private const string UpdateCheckUrl = "https://dev-api.dy.ci/api/distribute/check/csd/";
 
         private static readonly string DeviceId = GetOrCreateDeviceId();
@@ -126,7 +124,7 @@ namespace CSD.Services
                 var channel = GetUpdateChannel();
                 var url = $"{UpdateCheckUrl}?os={os}&arch={arch}&channel={channel}&user_id={Uri.EscapeDataString(DeviceId)}";
 
-                using var response = await _httpClient.GetAsync(url, cancellationToken);
+                using var response = await AppHttpClient.Instance.GetAsync(url, cancellationToken);
                 if (!response.IsSuccessStatusCode)
                 {
                     return null;

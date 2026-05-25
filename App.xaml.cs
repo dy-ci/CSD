@@ -144,6 +144,8 @@ namespace CSD
 
             TrayService = new TrayService(_window);
             TrayService.Initialize();
+
+            ToastHelper.Initialize();
         }
     }
 }
