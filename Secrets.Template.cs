@@ -9,10 +9,10 @@ namespace CSD;
 /// 2. 将 YOUR_APP_ID_HERE 替换为实际的应用程序 ID
 /// 3. Secrets.cs 不会被提交到 Git 仓库（已在 .gitignore 中排除）
 /// </summary>
-public static class Secrets
-{
+/// public static class Secrets
+///{
     /// <summary>
     /// 应用程序ID，用于服务器认证
     /// </summary>
-    public const string AppId = "YOUR_APP_ID_HERE";
-}
+///    public const string AppId = "YOUR_APP_ID_HERE";
+///}
