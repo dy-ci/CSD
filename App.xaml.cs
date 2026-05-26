@@ -1,4 +1,4 @@
-﻿using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Data;
@@ -145,7 +145,14 @@ namespace CSD
             TrayService = new TrayService(_window);
             TrayService.Initialize();
 
-            ToastHelper.Initialize();
+            NotificationService.Instance.Initialize();
+            NotificationService.Instance.OpenWindowRequested += () =>
+            {
+                _window?.DispatcherQueue.TryEnqueue(() =>
+                {
+                    _window?.Activate();
+                });
+            };
         }
     }
 }

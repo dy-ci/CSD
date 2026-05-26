@@ -5,11 +5,13 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 using System.Web;
-using Microsoft.Windows.AppNotifications;
-using Microsoft.Windows.AppNotifications.Builder;
+using Windows.Data.Xml.Dom;
+using Windows.UI.Notifications;
 
 namespace CSD.Services
 {
+    [Obsolete("请使用 NotificationService 替代。ToastHelper 基于旧版 Windows.UI.Notifications，"
+        + "新代码应统一走 NotificationService (AppNotification API)。")]
     public static class ToastHelper
     {
         private const string Aumid = "CSD.ClassworksDesktop";
@@ -17,6 +19,7 @@ namespace CSD.Services
         private static bool _initialized;
         private static bool _toastAvailable = true;
 
+        [Obsolete("使用 NotificationService.Instance.Initialize() 替代。")]
         public static void Initialize()
         {
             if (_initialized) return;
@@ -29,6 +32,24 @@ namespace CSD.Services
             catch (Exception ex)
             {
                 Debug.WriteLine("ToastHelper.Initialize failed: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// 确保 unpackaged 模式下 AUMID 注册完整（Start Menu 快捷方式和注册表项）。
+        /// 由 NotificationService.Initialize() 调用，替代旧的 ToastHelper.Initialize()。
+        /// </summary>
+        public static void EnsureAumidRegistration()
+        {
+            try
+            {
+                RegisterActivator();
+                CreateStartMenuShortcut();
+                Debug.WriteLine("ToastHelper.EnsureAumidRegistration completed");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("ToastHelper.EnsureAumidRegistration failed: " + ex.Message);
             }
         }
 
@@ -96,14 +117,6 @@ namespace CSD.Services
             return hr == 0 ? store : null;
         }
 
-        [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
-        private static extern int SHGetPropertyStoreFromParsingName(
-            [MarshalAs(UnmanagedType.LPWStr)] string pszPath,
-            IntPtr pbc,
-            uint flags,
-            ref Guid riid,
-            [MarshalAs(UnmanagedType.Interface)] out IPropertyStore ppv);
-
         public static void ShowToast(string title, string message, string? notificationId)
         {
             if (!_toastAvailable)
@@ -115,18 +128,29 @@ namespace CSD.Services
 
             try
             {
-                var builder = new AppNotificationBuilder()
-                    .AddText(title)
-                    .AddText(message);
+                var xml = $@"
+<toast>
+  <visual>
+    <binding template='ToastGeneric'>
+      <text>{EscapeXml(title)}</text>
+      <text>{EscapeXml(message)}</text>
+    </binding>
+  </visual>";
 
                 if (!string.IsNullOrEmpty(notificationId))
                 {
-                    builder.AddButton(new AppNotificationButton("已读")
-                        .AddArgument("action", "read")
-                        .AddArgument("notificationId", notificationId));
+                    xml += $@"
+  <actions>
+    <action content='已读' arguments='action=read&notificationId={notificationId}' activationType='foreground'/>
+  </actions>";
                 }
 
-                AppNotificationManager.Default.Show(builder.BuildNotification());
+                xml += "\n</toast>";
+
+                var doc = new XmlDocument();
+                doc.LoadXml(xml);
+                var toast = new ToastNotification(doc);
+                ToastNotificationManager.CreateToastNotifier(Aumid).Show(toast);
             }
             catch (Exception ex)
             {
@@ -135,18 +159,33 @@ namespace CSD.Services
                 App.TrayService?.ShowNotification(title, message);
             }
         }
+
+        private static string EscapeXml(string text)
+        {
+            return text.Replace("&", "&amp;").Replace("<", "&lt;")
+                .Replace(">", "&gt;").Replace("'", "&apos;")
+                .Replace("\"", "&quot;");
+        }
+
+        [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+        private static extern int SHGetPropertyStoreFromParsingName(
+            [MarshalAs(UnmanagedType.LPWStr)] string pszPath,
+            IntPtr pbc,
+            uint flags,
+            ref Guid riid,
+            [MarshalAs(UnmanagedType.Interface)] out IPropertyStore ppv);
     }
 
     [ComImport]
-    [Guid("53E31837-6600-4A81-9395-75CFFE746F94")]
+    [Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    public interface INotificationActivationCallback
+    internal interface IPropertyStore
     {
-        void Activate(
-            [MarshalAs(UnmanagedType.LPWStr)] string appUserModelId,
-            [MarshalAs(UnmanagedType.LPWStr)] string invokedArgs,
-            IntPtr data,
-            uint count);
+        void GetCount(out uint cProps);
+        void GetAt(uint iProp, out PropertyKey pkey);
+        void GetValue(ref PropertyKey pkey, out PropVariant pv);
+        void SetValue(ref PropertyKey pkey, ref PropVariant pv);
+        void Commit();
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -171,20 +210,22 @@ namespace CSD.Services
     }
 
     [ComImport]
-    [Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99")]
+    [Guid("53E31837-6600-4A81-9395-75CFFE746F94")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    internal interface IPropertyStore
+    public interface INotificationActivationCallback
     {
-        void GetCount(out uint cProps);
-        void GetAt(uint iProp, out PropertyKey pkey);
-        void GetValue(ref PropertyKey pkey, out PropVariant pv);
-        void SetValue(ref PropertyKey pkey, ref PropVariant pv);
-        void Commit();
+        void Activate(
+            [MarshalAs(UnmanagedType.LPWStr)] string appUserModelId,
+            [MarshalAs(UnmanagedType.LPWStr)] string invokedArgs,
+            IntPtr data,
+            uint count);
     }
 
     [ClassInterface(ClassInterfaceType.None)]
     [ComVisible(true)]
+#pragma warning disable CS0618 // ToastHelper 保留旧 COM 激活器兼容性
     [Guid(ToastHelper.ActivatorClsid)]
+#pragma warning restore CS0618
     public class NotificationActivator : INotificationActivationCallback
     {
         public void Activate(string appUserModelId, string invokedArgs, IntPtr data, uint count)

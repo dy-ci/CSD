@@ -268,47 +268,11 @@ namespace CSD.Views
             {
                 try
                 {
-                    using var doc = JsonDocument.Parse(data);
-                    string message = "收到紧急通知";
-                    string? notificationId = null;
-
-                    if (doc.RootElement.ValueKind == JsonValueKind.Object)
-                    {
-                        if (doc.RootElement.TryGetProperty("content", out var contentElement) && contentElement.ValueKind == JsonValueKind.Object)
-                        {
-                            if (contentElement.TryGetProperty("message", out var msgElement) && msgElement.ValueKind == JsonValueKind.String)
-                            {
-                                message = msgElement.GetString() ?? message;
-                            }
-                            if (contentElement.TryGetProperty("notificationId", out var idElement) && idElement.ValueKind == JsonValueKind.String)
-                            {
-                                notificationId = idElement.GetString();
-                            }
-                        }
-                        else 
-                        {
-                            if (doc.RootElement.TryGetProperty("message", out var msgElement2) && msgElement2.ValueKind == JsonValueKind.String)
-                            {
-                                message = msgElement2.GetString() ?? message;
-                            }
-                            if (doc.RootElement.TryGetProperty("notificationId", out var idElement2) && idElement2.ValueKind == JsonValueKind.String)
-                            {
-                                notificationId = idElement2.GetString();
-                            }
-                            if (doc.RootElement.TryGetProperty("content", out var stringContent) && stringContent.ValueKind == JsonValueKind.String)
-                            {
-                                message = stringContent.GetString() ?? message;
-                            }
-                        }
-                    }
-                    else if (doc.RootElement.ValueKind == JsonValueKind.String)
-                    {
-                        message = doc.RootElement.GetString() ?? message;
-                    }
-
+                    var payload = NotificationPayload.Parse(data);
+                    var message = string.IsNullOrEmpty(payload.Message) ? "收到紧急通知" : payload.Message;
+                    var notificationId = payload.NotificationId;
                     var deviceInfo = new { deviceName = "桌面端", deviceType = "desktop" };
 
-                    // Send Displayed Receipt (async, no UI thread needed)
                     if (notificationId != null)
                     {
                         await socketService.SendEventAsync("notification-displayed", new
@@ -319,7 +283,6 @@ namespace CSD.Views
                         });
                     }
 
-                    // Only UI work goes through DispatcherQueue — sync delegate only
                     var capturedMessage = message;
                     var capturedNid = notificationId;
                     var capturedDeviceInfo = deviceInfo;
@@ -327,9 +290,13 @@ namespace CSD.Views
                     {
                         try
                         {
-                            SoundService.PlaySound("urgent_notification.wav", loop: true);
+                            var urgentSoundSetting = AppSettings.Values["Settings_UrgentNotificationSound"] as string ?? "Teams 默认通话铃.mp3";
+                            if (urgentSoundSetting != "无" && !string.IsNullOrEmpty(urgentSoundSetting))
+                            {
+                                SoundService.PlaySound(urgentSoundSetting, loop: true);
+                            }
 
-                            var notificationWindow = new NotificationWindow("🚨 紧急通知", capturedMessage, true);
+                            var notificationWindow = new NotificationWindow("紧急通知", capturedMessage, true);
                             notificationWindow.Closed += async (s, e) =>
                             {
                                 if (capturedNid != null)
@@ -360,56 +327,12 @@ namespace CSD.Views
             {
                 try
                 {
-                    using var doc = JsonDocument.Parse(data);
-                    string message = "收到通知";
-                    string? notificationId = null;
-                    bool isUrgent = false;
-
-                    if (doc.RootElement.ValueKind == JsonValueKind.Object)
-                    {
-                        if (doc.RootElement.TryGetProperty("content", out var contentElement) && contentElement.ValueKind == JsonValueKind.Object)
-                        {
-                            if (contentElement.TryGetProperty("message", out var msgElement) && msgElement.ValueKind == JsonValueKind.String)
-                            {
-                                message = msgElement.GetString() ?? message;
-                            }
-                            if (contentElement.TryGetProperty("notificationId", out var idElement) && idElement.ValueKind == JsonValueKind.String)
-                            {
-                                notificationId = idElement.GetString();
-                            }
-                            if (contentElement.TryGetProperty("isUrgent", out var urgentElement) && urgentElement.ValueKind == JsonValueKind.True)
-                            {
-                                isUrgent = true;
-                            }
-                        }
-                        else 
-                        {
-                            if (doc.RootElement.TryGetProperty("message", out var msgElement2) && msgElement2.ValueKind == JsonValueKind.String)
-                            {
-                                message = msgElement2.GetString() ?? message;
-                            }
-                            if (doc.RootElement.TryGetProperty("notificationId", out var idElement2) && idElement2.ValueKind == JsonValueKind.String)
-                            {
-                                notificationId = idElement2.GetString();
-                            }
-                            if (doc.RootElement.TryGetProperty("isUrgent", out var urgentElement2) && urgentElement2.ValueKind == JsonValueKind.True)
-                            {
-                                isUrgent = true;
-                            }
-                            if (doc.RootElement.TryGetProperty("content", out var stringContent) && stringContent.ValueKind == JsonValueKind.String)
-                            {
-                                message = stringContent.GetString() ?? message;
-                            }
-                        }
-                    }
-                    else if (doc.RootElement.ValueKind == JsonValueKind.String)
-                    {
-                        message = doc.RootElement.GetString() ?? message;
-                    }
-
+                    var payload = NotificationPayload.Parse(data);
+                    var message = string.IsNullOrEmpty(payload.Message) ? "收到通知" : payload.Message;
+                    var notificationId = payload.NotificationId;
+                    var isUrgent = payload.IsUrgent;
                     var deviceInfo = new { deviceName = "桌面端", deviceType = "desktop" };
 
-                    // Send Displayed Receipt (async, no UI thread needed)
                     if (notificationId != null)
                     {
                         await socketService.SendEventAsync("notification-displayed", new
@@ -420,20 +343,22 @@ namespace CSD.Views
                         });
                     }
 
-                    // Only UI work goes through DispatcherQueue — sync delegate only
                     var capturedMessage = message;
                     var capturedNid = notificationId;
                     var capturedIsUrgent = isUrgent;
-                    var capturedDeviceInfo = deviceInfo;
                     DispatcherQueue.TryEnqueue(delegate
                     {
                         try
                         {
                             if (capturedIsUrgent)
                             {
-                                SoundService.PlaySound("urgent_notification.wav", loop: true);
+                                var urgentSoundSetting = AppSettings.Values["Settings_UrgentNotificationSound"] as string ?? "Teams 默认通话铃.mp3";
+                                if (urgentSoundSetting != "无" && !string.IsNullOrEmpty(urgentSoundSetting))
+                                {
+                                    SoundService.PlaySound(urgentSoundSetting, loop: true);
+                                }
 
-                                var notificationWindow = new NotificationWindow("🚨 紧急通知", capturedMessage, true);
+                                var notificationWindow = new NotificationWindow("紧急通知", capturedMessage, true);
                                 notificationWindow.Closed += async (s, e) =>
                                 {
                                     if (capturedNid != null)
@@ -442,7 +367,7 @@ namespace CSD.Views
                                         {
                                             eventId = $"read-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}",
                                             notificationId = capturedNid,
-                                            deviceInfo = capturedDeviceInfo
+                                            deviceInfo = deviceInfo
                                         });
                                     }
                                 };
@@ -450,7 +375,14 @@ namespace CSD.Views
                             }
                             else
                             {
-                                ToastHelper.ShowToast("📢 新通知", capturedMessage, capturedNid);
+                                if (!string.IsNullOrEmpty(capturedNid))
+                                {
+                                    NotificationService.Instance.ShowWithReadButton("新通知", capturedMessage, capturedNid, NotificationSound.Call);
+                                }
+                                else
+                                {
+                                    NotificationService.Instance.ShowSimple("新通知", capturedMessage, NotificationSound.Call);
+                                }
                             }
                         }
                         catch (Exception ex)

@@ -26,13 +26,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="CSD.Tests\**" />
-    <Content Remove="CSD.Tests\**" />
-    <Page Remove="CSD.Tests\**" />
-    <None Remove="CSD.Tests\**" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Content Include="Assets\SplashScreen.scale-200.png" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Assets\LockScreenLogo.scale-200.png" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Assets\Square150x150Logo.scale-200.png" CopyToOutputDirectory="PreserveNewest" />
@@ -68,7 +61,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="H.NotifyIcon.WinUI" Version="2.0.17" />
+    <PackageReference Include="H.NotifyIcon.WinUI" Version="2.0.24" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.1839" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.0.1" />
     <PackageReference Include="SocketIOClient" Version="4.0.4" />
