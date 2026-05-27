@@ -581,10 +581,10 @@ namespace CSD.Views
                     Padding = new Thickness(8, 6, 8, 6),
                     HorizontalAlignment = HorizontalAlignment.Stretch
                 };
-                
+
                 // 文本变化时更新预览
                 box.TextChanged += (_, _) => RefreshPreview();
-                
+
                 TouchKeyboardHelper.EnableForControl(box);
 
                 // 粘贴多行文本：自动拆分为多行
@@ -735,7 +735,7 @@ namespace CSD.Views
             // 初始预览
             RefreshPreview();
             
-            // 添加按钮
+            // 添加按钮 + 弹出键盘按钮
             var addLineBtn = new Button
             {
                 Content = "+ 添加新行",
@@ -748,6 +748,38 @@ namespace CSD.Views
                 AddLine(""); // 添加到末尾
                 inputBoxes[^1].Focus(FocusState.Programmatic);
             };
+
+            var openKbBtn = new Button
+            {
+                Content = "⌨",
+                FontSize = 14,
+                Padding = new Thickness(8, 6, 8, 6),
+                Margin = new Thickness(4, 4, 0, 0)
+            };
+            ToolTipService.SetToolTip(openKbBtn, "弹出键盘");
+            openKbBtn.Click += (s, e) =>
+            {
+                // 聚焦到最后一个输入框并弹出键盘
+                if (inputBoxes.Count > 0)
+                {
+                    var lastBox = inputBoxes[^1];
+                    lastBox.Focus(FocusState.Programmatic);
+                    try
+                    {
+                        var inputPane = Windows.UI.ViewManagement.InputPane.GetForCurrentView();
+                        inputPane?.TryShow();
+                    }
+                    catch { }
+                }
+            };
+
+            var bottomBar = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Spacing = 0
+            };
+            bottomBar.Children.Add(addLineBtn);
+            bottomBar.Children.Add(openKbBtn);
             
             // ========== 快捷面板 ==========
             
@@ -956,7 +988,7 @@ namespace CSD.Views
             });
             
             editorContent.Children.Add(linesPanel);
-            editorContent.Children.Add(addLineBtn);
+            editorContent.Children.Add(bottomBar);
 
             // 右侧编辑区整体可滚动
             var editorScrollViewer = new ScrollViewer
