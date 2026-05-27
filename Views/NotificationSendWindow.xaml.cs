@@ -3,9 +3,10 @@ using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Windows.Graphics;
 
 using CSD.Helpers;
+using Windows.Graphics;
+
 using CSD.Services;
 
 namespace CSD.Views

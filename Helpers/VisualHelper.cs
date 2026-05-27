@@ -2,7 +2,6 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 using CSD.Models;
 using Microsoft.UI;
-using Windows.UI;
 
 namespace CSD.Helpers
 {

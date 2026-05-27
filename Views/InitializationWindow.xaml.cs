@@ -15,7 +15,6 @@ using System.Threading.Tasks;
 using Windows.Graphics;
 using Windows.UI;
 
-
 using CSD.Views;
 using CSD.Models;
 using CSD.Services;
@@ -938,7 +937,8 @@ namespace CSD.Views
                 await httpClient.PostAsync($"{serverUrl}/devices", deviceContent);
 
                 // 2. Get token
-                var tokenPayload = new { @namespace = uuid, password = "", appId = Secrets.AppId };
+                string appId = AppSettings.Values["Settings_AppId"] as string ?? "d158067f53627d2b98babe8bffd2fd7d";
+                var tokenPayload = new { @namespace = uuid, password = "", appId };
                 var tokenContent = new StringContent(JsonSerializer.Serialize(tokenPayload), Encoding.UTF8, "application/json");
                 var response = await httpClient.PostAsync($"{serverUrl}/apps/auth/token", tokenContent);
                 var responseString = await response.Content.ReadAsStringAsync();
@@ -998,10 +998,11 @@ namespace CSD.Views
                 string ns = NamespaceBox.Text.Trim();
                 string pwd = AuthPasswordBox.Password;
 
+                string appId = AppSettings.Values["Settings_AppId"] as string ?? "d158067f53627d2b98babe8bffd2fd7d";
                 var tokenPayload = new Dictionary<string, string>
                 {
                     { "namespace", ns },
-                    { "appId", Secrets.AppId }
+                    { "appId", appId }
                 };
                 
                 if (!string.IsNullOrEmpty(pwd))
