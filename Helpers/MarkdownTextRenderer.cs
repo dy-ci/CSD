@@ -579,8 +579,8 @@ namespace CSD.Helpers
 
                         // 递归解析 MFM 函数内的内容
                         var span = new Span();
-                        ApplyMfmEffectStyle(span, effectWithParams ?? string.Empty);
-                        AppendInlineContent(span.Inlines, mfmContent.AsSpan());
+                        ApplyMfmEffectStyle(span, effectWithParams ?? string.Empty, fontSize);
+                        AppendInlineContent(span.Inlines, mfmContent.AsSpan(), fontSize);
                         inlines.Add(span);
                         continue;
                     }
@@ -784,7 +784,7 @@ namespace CSD.Helpers
         /// <summary>
         /// 应用 MFM 效果样式（支持带参数的效果，如 spin.speed=5s,left, fg.color=f00）
         /// </summary>
-        private static void ApplyMfmEffectStyle(Span span, string effectWithParams)
+        private static void ApplyMfmEffectStyle(Span span, string effectWithParams, double fontSize = 0)
         {
             if (string.IsNullOrEmpty(effectWithParams))
                 return;
