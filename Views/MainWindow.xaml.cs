@@ -233,6 +233,7 @@ namespace CSD.Views
                 AnimationHelper.AnimateEntrance(rootContent, fromY: 16f, durationMs: 380);
                 AnimationHelper.ApplyStandardInteractions(rootContent);
             }
+            PickRandomStudentButton.Visibility = RandomPickerSettings.IsEnabled ? Visibility.Visible : Visibility.Collapsed;
             // 延迟执行非关键启动任务（快捷方式创建涉及 COM 互操作）
             _ = Task.Run(() => { try { EnsureDesktopShortcut(); } catch { } });
             _ = CheckForUpdatesAsync();
@@ -1155,6 +1156,9 @@ namespace CSD.Views
                 _ = RefreshAllGlobalComponentsAsync();
                 VisualHelper.ApplyWindowBackdrop(this);
 
+                // 如果关闭了点名器，隐藏主界面按钮；重新开启则恢复
+                PickRandomStudentButton.Visibility = RandomPickerSettings.IsEnabled ? Visibility.Visible : Visibility.Collapsed;
+
                 // 如果关闭了调试模式，关闭调试窗口
                 if (!DebugWindow.IsDebugModeEnabled() && _debugWindow != null)
                 {
@@ -1374,6 +1378,10 @@ namespace CSD.Views
                 }
 
                 return responseBody;
+            }
+            catch (OperationCanceledException)
+            {
+                return null;
             }
             catch (Exception ex)
             {
@@ -2005,6 +2013,7 @@ namespace CSD.Views
 
         private async void PickRandomStudentButton_Click(object sender, RoutedEventArgs e)
         {
+            if (!RandomPickerSettings.IsEnabled) return;
             var pickerWindow = new RandomPickerWindow();
             pickerWindow.Activate();
         }

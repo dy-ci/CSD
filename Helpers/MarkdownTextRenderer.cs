@@ -1,4 +1,4 @@
-﻿using Microsoft.UI.Text;
+using Microsoft.UI.Text;
 using Windows.UI.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -860,26 +860,26 @@ namespace CSD.Helpers
             {
                 // 缩放效果
                 case "x2":
-                    span.FontSize = span.FontSize > 0 ? span.FontSize * 1.5 : 24;
+                    span.FontSize = span.FontSize > 0 ? span.FontSize * 1.5 : fontSize * 1.5;
                     break;
                 case "x3":
-                    span.FontSize = span.FontSize > 0 ? span.FontSize * 2 : 32;
+                    span.FontSize = span.FontSize > 0 ? span.FontSize * 2 : fontSize * 2;
                     break;
                 case "x4":
-                    span.FontSize = span.FontSize > 0 ? span.FontSize * 2.5 : 40;
+                    span.FontSize = span.FontSize > 0 ? span.FontSize * 2.5 : fontSize * 2.5;
                     break;
                 case "scale":
                     if (parameters.TryGetValue("x", out var scaleX) && double.TryParse(scaleX, out var sx))
                     {
-                        span.FontSize = span.FontSize > 0 ? span.FontSize * sx : 16 * sx;
+                        span.FontSize = span.FontSize > 0 ? span.FontSize * sx : fontSize * sx;
                     }
                     else if (parameters.TryGetValue("y", out var scaleY) && double.TryParse(scaleY, out var sy))
                     {
-                        span.FontSize = span.FontSize > 0 ? span.FontSize * sy : 16 * sy;
+                        span.FontSize = span.FontSize > 0 ? span.FontSize * sy : fontSize * sy;
                     }
                     else
                     {
-                        span.FontSize = span.FontSize > 0 ? span.FontSize * 1.5 : 24;
+                        span.FontSize = span.FontSize > 0 ? span.FontSize * 1.5 : fontSize * 1.5;
                     }
                     break;
 

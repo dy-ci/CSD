@@ -63,7 +63,23 @@ namespace CSD.Settings
 
         protected override void HookAutoSaveHandlers()
         {
-            _randomPickerEnabledToggle.Toggled += (_, _) => NotifySettingsChanged();
+            _randomPickerEnabledToggle.Toggled += async (_, _) =>
+            {
+                if (!_randomPickerEnabledToggle.IsOn &&
+                    !AppSettings.Values.GetBool("randomPicker.disableNotificationShown", false))
+                {
+                    var dialog = new ContentDialog
+                    {
+                        Title = "随机点名已关闭",
+                        Content = "随机点名功能已关闭，主界面上的\"随机抽取\"按钮将不再显示。如需重新开启，请再次进入设置。",
+                        CloseButtonText = "确定",
+                        XamlRoot = Context.Window.Content.XamlRoot
+                    };
+                    await dialog.ShowAsync();
+                    AppSettings.Values["randomPicker.disableNotificationShown"] = true;
+                }
+                NotifySettingsChanged();
+            };
             _randomPickerMinNumberBox.ValueChanged += (_, _) => NotifySettingsChanged();
             _randomPickerMaxNumberBox.ValueChanged += (_, _) => NotifySettingsChanged();
             _randomPickerDefaultCountBox.ValueChanged += (_, _) => NotifySettingsChanged();

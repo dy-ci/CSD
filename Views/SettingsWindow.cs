@@ -131,17 +131,12 @@ namespace CSD.Views
             _modules.Add(new ServerSettingsModule());
             _modules.Add(new SubjectSettingsModule());
             _modules.Add(new RosterSettingsModule());
-            _modules.Add(new RefreshSettingsModule());
-            _modules.Add(new NotificationSettingsModule());
-            _modules.Add(new EditSettingsModule());
-            _modules.Add(new DisplaySettingsModule());
-            _modules.Add(new PlaybackSettingsModule());
-            _modules.Add(new RandomPickerSettingsModule());
-            _modules.Add(new PerformanceSettingsModule());
-            _modules.Add(new AutoStartSettingsModule());
-            _modules.Add(new CloseBehaviorSettingsModule());
+            _modules.Add(new DisplayAndNotificationSettingsModule());
+            _modules.Add(new ClassroomToolsSettingsModule());
+            _modules.Add(new EditAndRefreshSettingsModule());
             _modules.Add(new AccountSettingsModule());
-            _modules.Add(new UpdateSettingsModule());
+            _modules.Add(new StartupAndShutdownSettingsModule());
+            _modules.Add(new PerformanceAndUpdateSettingsModule());
 
             foreach (var module in _modules)
             {
